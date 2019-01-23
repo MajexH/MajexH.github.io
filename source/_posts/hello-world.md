@@ -1,38 +1,13 @@
 ---
 title: Hello World
+date: 2019-01-23 19:02:39
+category: code
+tags: init
+toc: true
 ---
-Welcome to [Hexo](https://hexo.io/)! This is your very first post. Check [documentation](https://hexo.io/docs/) for more info. If you get any problems when using Hexo, you can find the answer in [troubleshooting](https://hexo.io/docs/troubleshooting.html) or you can ask me on [GitHub](https://github.com/hexojs/hexo/issues).
 
-## Quick Start
+笔者乃一介根正苗红的理科生，不善言辞。建立这个博客只是~~兴趣所致~~为了完成18年的既定目标 & 找一个能够写些东西的地方（~~毕竟工作之余心情烦闷之时？！~~）   
+<br/>
+~~指不定写些啥就咕咕咕了~~  
 
-### Create a new post
-
-``` bash
-$ hexo new "My New Post"
-```
-
-More info: [Writing](https://hexo.io/docs/writing.html)
-
-### Run server
-
-``` bash
-$ hexo server
-```
-
-More info: [Server](https://hexo.io/docs/server.html)
-
-### Generate static files
-
-``` bash
-$ hexo generate
-```
-
-More info: [Generating](https://hexo.io/docs/generating.html)
-
-### Deploy to remote sites
-
-``` bash
-$ hexo deploy
-```
-
-More info: [Deployment](https://hexo.io/docs/deployment.html)
+谨以此hello world纪念下博客正式搭好

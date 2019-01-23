@@ -21,12 +21,12 @@ body, button, input, select, textarea
 @media screen and (min-width: screen-widescreen)
     .is-1-column .container
     .is-2-column .container
-        max-width: screen-desktop - 2 * gap
-        width: screen-desktop - 2 * gap
+        max-width: screen-desktop - 2 * gap + 150px
+        width: screen-desktop - 2 * gap + 150px
 @media screen and (min-width: screen-fullhd)
     .is-2-column .container
-        max-width: screen-widescreen - 2 * gap
-        width: screen-widescreen - 2 * gap
+        max-width: screen-widescreen - 2 * gap + 150px
+        width: screen-widescreen - 2 * gap + 150px
     .is-1-column .container
         max-width: screen-desktop - 2 * gap
         width: screen-desktop - 2 * gap
@@ -285,9 +285,6 @@ img.thumbnail
 
 .has-mr-6
     margin-right: 0.5em !important
-
-.level-start
-    margin: 0 auto
 
 .has-mb-6
     margin-bottom: 0.5em !important
