@@ -77,4 +77,10 @@ theme: icarus
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-  type:
+  type: rsync
+  host: 149.28.27.173
+  user: nginx
+  root: /home/nginx
+  port: 28875
+  delete: true
+
