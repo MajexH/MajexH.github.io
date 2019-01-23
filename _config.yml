@@ -80,7 +80,7 @@ deploy:
   type: rsync
   host: 149.28.27.173
   user: nginx
-  root: /home/nginx
+  root: /home/nginx/public
   port: 28875
   delete: true
 
