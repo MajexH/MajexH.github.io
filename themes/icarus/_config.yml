@@ -49,11 +49,11 @@ footer:
 article:
     # Code highlight theme
     # https://github.com/highlightjs/highlight.js/tree/master/src/styles
-    highlight: atom-one-light
+    highlight: atom-one-dark
     # Whether to show article thumbnail images
     thumbnail: false
     # Whether to show estimate article reading time
-    readtime: true
+    readtime: false
 # Search plugin settings
 # http://ppoffice.github.io/hexo-theme-icarus/categories/Configuration/Search-Plugins
 search:
@@ -63,7 +63,13 @@ search:
 # http://ppoffice.github.io/hexo-theme-icarus/categories/Configuration/Comment-Plugins
 comment:
     # Name of the comment plugin
-    type: 
+    type: valine
+    app_id: wdcr56YDuf5AyD3d3dqczC0s-gzGzoHsz  # (required) LeanCloud application id
+    app_key: oXtXW8oc8mEquYjRHFxOgQv7          # (required) LeanCloud application key
+    notify: true                               # (optional) receive email notification
+    verify: false           # (optional) show verification code
+    # placeholder: xxxxxxxx   # (optional) comment box placeholder text
+    visitor: true
 # Donation entries
 # http://ppoffice.github.io/hexo-theme-icarus/categories/Donation/
 #donate:
