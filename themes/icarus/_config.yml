@@ -101,6 +101,11 @@ sidebar:
 widgets:
     -
         # Widget name
+        type: toc
+        # Where should the widget be placed, left or right
+        position: left
+    -
+        # Widget name
         type: profile
         # Where should the widget be placed, left or right
         position: left
@@ -133,11 +138,6 @@ widgets:
             #RSS:
                 #icon: fas fa-rss
                 #url: /
-    -
-        # Widget name
-        type: toc
-        # Where should the widget be placed, left or right
-        position: right
     #-
         # Widget name
         #type: links

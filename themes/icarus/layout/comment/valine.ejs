@@ -17,7 +17,7 @@
     (function () {
         var span = document.getElementsByClassName('leancloud-visitors')[0];
         span['id'] = window.location.pathname;
-        span['data-flag-title'] = document.title;
+        span.dataset.flagTitle = document.title;
     })();
 
     new Valine({
