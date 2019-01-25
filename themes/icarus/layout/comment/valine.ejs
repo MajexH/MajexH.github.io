@@ -17,7 +17,8 @@
     (function () {
         var span = document.getElementsByClassName('leancloud-visitors')[0];
         span['id'] = window.location.pathname;
-        span.dataset.flagTitle = document.title;
+        // 貌似 title 有bug
+        // span.dataset.flagTitle = document.title;
     })();
 
     new Valine({
