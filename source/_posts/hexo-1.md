@@ -53,3 +53,9 @@ osx环境下使用homebrew安装
 ```
 brew install nodejs
 ```
+
+### git环境
+
+windows可以通过访问[git官网](https://git-scm.com/)下载安装包即可
+
+各类linux系等建议通过包管理器下载

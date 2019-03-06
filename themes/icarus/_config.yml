@@ -51,7 +51,7 @@ article:
     # https://github.com/highlightjs/highlight.js/tree/master/src/styles
     highlight: atom-one-dark
     # Whether to show article thumbnail images
-    thumbnail: false
+    thumbnail: true
     # Whether to show estimate article reading time
     readtime: false
 # Search plugin settings

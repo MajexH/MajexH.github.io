@@ -4,4 +4,5 @@ date: {{ date }}
 category:
 tags:
 toc:
+thumbnail:
 ---
