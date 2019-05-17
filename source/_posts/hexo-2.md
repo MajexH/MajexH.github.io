@@ -101,8 +101,6 @@ icarus提供了对于gitalk、Valine等评论插件的支持，这个blog使用�
 申请[leancloud](http://www.leancloud.cn)
 
 {% asset_img application.png test %}
-<img src="./application.png" width="50%" style="margin: 0px auto">
-</img>
 
 应用申请成功后将下列key填入icarus下的_config.yml中
 

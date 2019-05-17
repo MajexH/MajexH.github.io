@@ -38,7 +38,7 @@ hexo deploy提供了多种[方式](https://hexo.io/zh-cn/docs/deployment)来部�
 #### 本地设置
 
 在搞定了用户之后我们就需要在blog的配置文件`_config.yml`中配置`deploy`选项来启用rsync帮助我们来进行远程部署，如下图所示。
-<br/>![](./rsync.png)<br/>
+{% asset_img rsync.png test %}
 
 ### 使用git hooks来自动调用hexo deploy
 
