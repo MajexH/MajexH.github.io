@@ -51,7 +51,15 @@ hexo new [layout] <title>
 
 ### hexo publish
 
+```
+hexo publish [layout] <filename>
+```
+hexo将文章组织为draft和post两种状态，因此在使用了`hexo new draft someFile`后需要通过`hexo publish`命令将处于draft下的文章正式发表，这样才能在blog中正常查看。
+
 ### hexo generate & hexo deploy
+
+hexo generate会将markdown文件等一系列的文件编译转换成标准的静态文件。
+hexo deploy命令会将本地生成的静态文件一键部署到远程服务器。
 
 ## hexo 主题
 
