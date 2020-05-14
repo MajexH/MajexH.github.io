@@ -19,3 +19,8 @@ spring提供了一个controller层的实现spring mvc，该spring mvc通过Dispa
 
 翻看源码 可以知道，在DispatchServlet被初始化的时候，同时初始化了一个HandlerMapping和HandlerAdapter
 
+HandlerMapping 这个 interface 之定义了一个 getHandler() 的方法，这个方法需要返回根据 request 拿到的对应的 handler (执行请求的方法)
+
+底下的 几个 Abstract方法 分别
+
+自动扫描@RequestMapping的原因是因为AbstractHandlerMethodMapping实现了initiatingBean 在 afterProperties() 方法中实现了detectHandlerMethods() 会在传入的bean里面去寻找适合的方法 做成 RequestMappingInfo
