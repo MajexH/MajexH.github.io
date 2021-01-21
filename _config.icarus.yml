@@ -246,10 +246,10 @@ widgets:
         type: recent_posts
     -
         type: archives
-        position: right
+        position: left
     -
         type: tags
-        position: right
+        position: left
 plugins:
     # Enable page startup animations
     animejs: true
