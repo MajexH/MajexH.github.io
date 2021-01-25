@@ -95,7 +95,7 @@ class Solution {
 
 ## 贪心算法
 
-#### [转换罗马字](https://leetcode-cn.com/problems/roman-to-integer/)
+### [转换罗马字](https://leetcode-cn.com/problems/roman-to-integer/)
 
 ```golang
 package classic
@@ -140,6 +140,26 @@ func intToRoman(num int) string {
 }
 ```
 
+### [jumpGame](https://leetcode-cn.com/problems/jump-game/)
+
+```golang
+func canJump(nums []int) bool {
+	rightMost := 0
+	for i, num := range nums {
+		// 如果当前的下标大于 rightMost 说明这个点是无法到达的 直接返回 false 即可
+		if i > rightMost {
+			return false
+		}
+		// 维护一个能够到达的最远距离
+		rightMost = max(rightMost, i + num)
+		// 最远距离大于长度 即可知道能够达到
+		if rightMost >= len(nums) - 1 {
+			return true
+		}
+	}
+	return false
+}
+```
 
 ## 递归
 
@@ -466,6 +486,75 @@ func reverseBetweenNodes(startNode, endNodeNext *ListNode) (*ListNode, *ListNode
 
 ### 图
 
+#### 并查集的数据结构
+
+并查集，表示的是一个树形的结构
+
+{% asset_img union.png 并查集示意 %}
+
+如图所示，针对图的一个极大连通分量，会形成一个对应的树结构（并查集只关注一个连通分量有多少连接点，不关注内部的其他的细节）
+
+所以针对查找连通分量有哪些，以及连同量间的关系有作用
+
+##### 并查集存储数据的结构
+
+```golnag
+type Union struct {
+	parents []int // 存储树的数据结构 parents[i] 表示连接到该节点的父节点的索引 如果不能用 int 来表示 可以考虑 map 类的数据结构
+}
+```
+##### 并查集的操作
+
+- union (联合，关联两个点)
+- find  (查找，找到当前点的最终的父节点)
+
+所以，实际上 如果 r1 r2 之间有连接线的话，要关联 r1 r2 的操作就是。
+
+- 就是通过 `find` 找到分别的根节点 r1Root r2Root
+- 在通过 `union` 方法关联两个根节点，实际上就是将 r2Root 作为一个子节点，挂载到 r1Root 下
+
+所以整体的数据结构为
+
+```golang
+type unionFind struct {
+	Parents []int
+	Count   int     // 表示连通分量的多少
+}
+
+func NewUnionFind(size int) *unionFind {
+	res := &unionFind{
+		Parents: make([]int, size),
+		Count:   size,
+	}
+	// 初始化并查集中的每个元素的父节点都是自己
+	for i := 0; i < size; i++ {
+		res.Parents[i] = i
+	}
+	return res
+}
+
+func (u *unionFind) union(i, j int) {
+	iRoot := u.find(i)
+	jRoot := u.find(j)
+	if iRoot != jRoot {
+		u.Parents[jRoot] = iRoot
+		// 每次连接一个之后 最大连通分量就要 --
+		u.Count--
+	}
+}
+
+func (u *unionFind) find(i int) int {
+	if u.Parents[i] == i {
+		return i
+	}
+	return u.find(u.Parents[i])
+}
+
+func (u *unionFind) GetCount() int {
+	return u.Count
+}
+```
+
 #### [连通网络的操作次数](https://leetcode-cn.com/problems/number-of-operations-to-make-network-connected/)
 
 题目所述，给定一个图，找到将其所有最大连通分量连通所需更改的最少的边的数量为多少。
@@ -571,3 +660,78 @@ func makeConnected(n int, connections [][]int) int {
 	return res - 1
 }
 ```
+
+#### [由斜杠划分区域](https://leetcode-cn.com/problems/regions-cut-by-slashes/)
+
+采用并查集，但是这道题有特殊的地方。
+
+题目中所示，针对一个方格有 **/** 和 **\\** 两种，如下
+
+<pre>
+----    ----
+|\ |    | /|
+| \|    |/ |
+----    ----
+</pre>
+
+总之，针对一个 方格 ，可以把他看成四个部分
+
+{% asset_img 959-1.png 一个单元格分块 %}
+
+那么，也就是说，
+
+- 如果当前 char == ' ' 表示 0 1 2 3 都是联通的
+- 如果 char == '\\' 表示 01 23 分别连通
+- char == '/' 表示 03 12 分别连通
+
+内部的连通完毕后，
+- 还可以知道 1 一定跟下一个 3 连通
+- 2 一定跟下一行的 0 连通
+
+```golang
+// regionsBySlashes 通过斜杠划分
+func regionsBySlashes(grid []string) int {
+	// n * n 的矩阵的长度
+	length := len(grid)
+	// 为了使用 并查集 将一个1*1 的正方形，即 一个 grid[i] 标识的区域分成 四个地方
+	// 然后再根据 / \\ 两个符号的位置进行合并 最后看有几个节点
+	unionSize := 4 * length * length
+	u := NewUnionFind(unionSize)
+
+	for i, str := range grid {
+		for j, char := range str {
+			// 0 号位置
+			uIndex := 4 * (i*length + j)
+
+			// 同一个单元格里面的连接起来
+			switch char {
+			// 0 1 2 3 都要连接起来
+			case ' ':
+				u.union(uIndex, uIndex + 1)
+				u.union(uIndex + 1, uIndex + 2)
+				u.union(uIndex + 2, uIndex + 3)
+			case '\\':
+				// 反斜杠的话 01 23 分别连接
+				u.union(uIndex, uIndex + 1)
+				u.union(uIndex + 2, uIndex + 3)
+			case '/':
+				// 斜杠的话 03 12 分贝连接
+				u.union(uIndex, uIndex + 3)
+				u.union(uIndex + 1, uIndex + 2)
+			}
+			// 单元格外面的连接起来
+			// 不管是 \\ 还是 / 这个区域的1一定可以和右边下一个区域( j+ 1)的 3 连接
+			// 这个区域的 2 一定可以和下边(i + 1)下一个区域的 0 连接
+			if j + 1 < length {
+				u.union(uIndex+1, 4*(i*length+j+1)+3)
+			}
+			if i + 1 < length {
+				u.union(uIndex+2, 4*((i+1)*length+j))
+			}
+		}
+	}
+
+	return u.GetCount()
+}
+```
+
