@@ -13,6 +13,108 @@ thumbnail:
 
 记录下 leetcode 值得记录的例题
 
+## 滑动窗口
+
+### [最小覆盖子串](https://leetcode-cn.com/problems/minimum-window-substring/)
+
+滑动窗口
+
+- 当前遍历的字符串没有包含所有字符的时候，右移右游标
+- 然后左移左游标，直到不再包含该字符串
+- 在移动窗口的时候不听比较即可
+
+```golang
+func checkEqualMap(mapForT, window map[int32]int) bool {
+	for k, v := range mapForT {
+		if count, ok := window[k]; !ok || count < v {
+			return false
+		}
+	}
+	return true
+}
+
+func minWindow(s string, t string) string {
+	i, j := 0, 0
+	res := ""
+	mapForT := make(map[int32]int)
+
+	for _, char := range t {
+		mapForT[char]++
+	}
+
+	window := make(map[int32]int)
+
+	for j < len(s) || i < j {
+		for j < len(s) && !checkEqualMap(mapForT, window) {
+			window[int32(s[j])]++
+			j++
+		}
+		if checkEqualMap(mapForT, window) && (res == "" || len(res) > j-i) {
+			res = s[i:j]
+		}
+		window[int32(s[i])]--
+		i++
+	}
+	return res
+}
+```
+
+```java
+class Solution {
+    // 返回true 说明里面已经包含了一个完整的 t 字符串
+    public boolean checkMap(HashMap<Character, Integer> mapForT, HashMap<Character, Integer> mapForS) {
+        for (Character key : mapForT.keySet()) {
+            if (!mapForS.containsKey(key) || mapForS.get(key) < mapForT.get(key)) return false;
+        }
+        return true;
+    }
+
+    public String minWindow(String s, String t) {
+        // 这都是不存在的
+        if (s == null || t == null || s.length() < t.length()) return "";
+        String minStr = null;
+        HashMap<Character, Integer> mapForT = new HashMap<>();
+        for (char character : t.toCharArray()) {
+            if (!mapForT.containsKey(character)) {
+                mapForT.put(character, 1);
+            } else {
+                mapForT.put(character, mapForT.get(character) + 1);
+            }
+        }
+
+        HashMap<Character, Integer> mapForS = new HashMap<>();
+        for (int i = 0; i < t.length(); i++) {
+            Character character = s.charAt(i);
+            if (!mapForS.containsKey(character)) {
+                mapForS.put(character, 1);
+            } else {
+                mapForS.put(character, mapForS.get(character) + 1);
+            }
+        }
+        // 滑动窗口大小
+        int left  = 0, right = t.length() - 1;
+        do {
+            while (checkMap(mapForT, mapForS) && right - left + 1 >= t.length()) {
+                if (minStr == null || minStr.length() > right - left + 1) {
+                    minStr = s.substring(left, right + 1);
+                }
+                mapForS.put(s.charAt(left), mapForS.get(s.charAt(left)) - 1);
+                left++;
+            }
+            right++;
+            if (right >= s.length()) continue;
+            if (!mapForS.containsKey(s.charAt(right))) {
+                mapForS.put(s.charAt(right), 1);
+            } else {
+                mapForS.put(s.charAt(right), mapForS.get(s.charAt(right)) + 1);
+            }
+        } while (right <= s.length() - 1 && right - left + 1 > t.length());
+        return minStr == null ? "" : minStr;
+    }
+}
+```
+
+
 ## 二进制题目
 
 ### 模拟除法(https://leetcode-cn.com/problems/divide-two-integers/)
@@ -90,6 +192,52 @@ class Solution {
         }
         return sign * res;
     }
+}
+```
+
+## 动态规划
+
+### [解码方法](https://leetcode-cn.com/problems/decode-ways/)
+
+这道题是入门的动态规划 只要知道 前一个和前前个的状态，就可以转移到下一个状态
+
+```golang
+func numDecodings(s string) int {
+	if len(s) == 0 {
+		return 0
+	}
+	// dp[i] 表示 s[0:i] 不包括i能生成的数量
+	// dp[i] = dp[i-1]+dp[i-2]
+	// 因为只要当前的这个 sting 能够被 decoding 说明只要加上前面的数量即可
+	dp := make([]int, len(s) + 1)
+	dp[0] = 1
+	// 表示的每次遍历的string的尾部
+	for i := 1; i <= len(s); i++ {
+		for j := max(i - 2, 0); j < i; j++ {
+			if canDecoding(s[j:i]) {
+				dp[i] += dp[j]
+			}
+		}
+	}
+	return dp[len(s)]
+}
+
+func canDecoding(s string) bool {
+	if len(s) > 1 && s[0] == '0' {
+		return false
+	}
+
+	if num, err := strconv.Atoi(s); err != nil || num > 26 || num < 1 {
+		return false
+	}
+	return true
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 ```
 
@@ -484,6 +632,152 @@ func reverseBetweenNodes(startNode, endNodeNext *ListNode) (*ListNode, *ListNode
 }
 ```
 
+### 树
+
+#### [树的遍历](https://leetcode-cn.com/problems/binary-tree-inorder-traversal/)
+
+##### 中序遍历
+
+```golang
+func inorderTraversal(root *TreeNode) []int {
+	res := make([]int, 0)
+
+	stack := list.New()
+
+	for root != nil || stack.Len() != 0 {
+		for root != nil {
+			stack.PushBack(root)
+			root = root.Left
+		}
+		if stack.Len() > 0 {
+			root = stack.Remove(stack.Back()).(*TreeNode)
+			res = append(res, root.Val)
+			root = root.Right
+		}
+	}
+	return res
+}
+```
+
+##### [前序遍历](https://leetcode-cn.com/problems/binary-tree-preorder-traversal/)
+
+```golang
+package classic
+
+import "container/list"
+
+func preorderTraversal(root *TreeNode) []int {
+	res := make([]int, 0)
+
+	stack := list.New()
+
+	for root != nil || stack.Len() > 0 {
+		for root != nil {
+			res = append(res, root.Val)
+			stack.PushBack(root)
+			root = root.Left
+		}
+		if stack.Len() > 0 {
+			root = stack.Remove(stack.Back()).(*TreeNode)
+			root = root.Right
+		}
+	}
+	return res
+}
+```
+
+##### [后序遍历]()
+
+##### [层次遍历]()
+
+```golang
+func levelOrder(root *TreeNode) [][]int {
+	res := make([][]int, 0)
+    if root == nil {
+		return res
+	}
+	tmp := make([]int, 0)
+	queue := list.New()
+	queue.PushBack(root)
+	queue.PushBack(nil)
+	for queue.Len() > 0 {
+		node := queue.Remove(queue.Front())
+		if node == nil {
+			cp := make([]int, len(tmp))
+			copy(cp, tmp)
+			res = append(res, cp)
+            if queue.Len() == 0 {
+				break
+			}
+			queue.PushBack(nil)
+			tmp = make([]int, 0)
+			continue
+		}
+		top := node.(*TreeNode)
+		if top.Left != nil {
+			queue.PushBack(top.Left)
+		}
+		if top.Right != nil {
+			queue.PushBack(top.Right)
+		}
+		tmp = append(tmp, top.Val)
+	}
+	return res
+}
+```
+
+zigzag 的层次遍历
+
+```golang
+package classic
+
+import "container/list"
+
+func zigzagLevelOrder(root *TreeNode) [][]int {
+
+	res := make([][]int, 0)
+	if root == nil {
+		return res
+	}
+	isLeft := true
+	tmp := make([]int, 0)
+	queue := list.New()
+
+	queue.PushBack(root)
+	queue.PushBack(nil)
+
+	for queue.Len() > 0 {
+		top := queue.Remove(queue.Front())
+		if top == nil {
+			cp := make([]int, len(tmp))
+			copy(cp, tmp)
+			res = append(res, cp)
+			if queue.Len() == 0 {
+				break
+			}
+			isLeft = !isLeft
+			tmp = make([]int, 0)
+			queue.PushBack(nil)
+			continue
+		}
+		node := top.(*TreeNode)
+		if node.Left != nil {
+			queue.PushBack(node.Left)
+		}
+		if node.Right != nil {
+			queue.PushBack(node.Right)
+		}
+		// 这个地方可以这样加入 就不用再 top == nil 中重新反转数组
+		if isLeft {
+			tmp = append(tmp, node.Val)
+		} else {
+			tmp = append([]int{node.Val}, tmp...)
+		}
+	}
+	return res
+}
+```
+
 ### 图
 
 #### 并查集的数据结构
@@ -735,3 +1029,88 @@ func regionsBySlashes(grid []string) int {
 }
 ```
 
+#### [水位上升的泳池中游泳](https://leetcode-cn.com/problems/swim-in-rising-water/)
+
+这道题没想明白最开始，肯定是明白要知道到什么时候 [0,0] 跟 [n - 1, n - 1] 的右下角相连
+
+相连的判断可以通过`并查集`实现
+
+那么就要解决几个问题：
+
+- 怎么遍历
+- 并查集连接的条件是什么
+- 怎么把二维数组的位置抽象到一维
+
+从以下几个方面入手
+
+- 题目中所述 grid 中的数值从 [0, n*n-1] 的唯一数值，也就是说每个格子的高度都是独立的，因此只需要遍历高度，在遍历高度中如果 [0, n*n-1] 相连，即完成连接
+- 由于题目中 当遍历的位置达到一个高度的时候，他可以直接和**上下左右**上的相连，也就是说遍历到高度更高的地方能够直接比高度更低的地方连接
+- 而题目中的 grid 的棋盘的二维数组可以通过简单的 `n*x+y` 抽象到一维
+
+```golang
+package classic
+
+func union(parents []int, i, j int) {
+	iRoot, jRoot := findRootOfParents(parents, i), findRootOfParents(parents, j)
+	if iRoot != jRoot {
+		parents[jRoot] = iRoot
+	}
+}
+
+func findRootOfParents(parents []int, i int) int {
+	if parents[i] == i {
+		return i
+	}
+	return findRootOfParents(parents, parents[i])
+}
+
+func isConnectedParents(parents []int, i, j int) bool {
+	return findRootOfParents(parents, i) == findRootOfParents(parents, j)
+}
+
+var (
+	// 表示上下左右四个方向
+	DIRECTIONS = [][]int{{0, 1}, {0, -1}, {1, 0}, {-1, 0}}
+)
+
+func swimInWater(grid [][]int) int {
+	if grid == nil {
+		return -1
+	}
+	n := len(grid)
+
+	index := make([]int, n*n)
+
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			// 因为题目中所述，grid 里面的数值从 0 -> n * n - 1
+			// 所以让高度作为下标索引 方便下面遍历
+			index[grid[i][j]] = n*i + j
+		}
+	}
+	// grid 的二位数组 可以转为 n * i + j 的一维坐标
+	parents := make([]int, n*n)
+	for i := 0; i < n*n; i++ {
+		parents[i] = i
+	}
+
+	for i := 0; i < n*n; i++ {
+		x, y := index[i]/n, index[i]%n
+		for _, direction := range DIRECTIONS {
+			newX, newY := x+direction[0], y+direction[1]
+			// 因为这个是从高度相距只有1的地方开始的 所以可以直接关联
+			// 这样当 0 n - 1 连接到一起的时候 说明已经达到的最小的高度
+			// 只有新的节点的高度 小于 当前的高度 才是可以游过去的！！！
+			if !(newX < 0 || newX >= n || newY < 0 || newY >= n) && grid[newX][newY] <= i {
+				// index 的索引用在这个地方
+				union(parents, index[i], newX*n+newY)
+			}
+
+			if isConnectedParents(parents, 0, n*n-1) {
+				return i
+			}
+		}
+	}
+	return -1
+}
+```
