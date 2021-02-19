@@ -8,8 +8,7 @@ date: 2021-01-18 16:38:31
 thumbnail:
 ---
 
-
-# leetcode例题
+# leetcode 例题
 
 记录下 leetcode 值得记录的例题
 
@@ -114,6 +113,91 @@ class Solution {
 }
 ```
 
+### [K 个不同整数的子数组](https://leetcode-cn.com/problems/subarrays-with-k-different-integers/)
+
+找到 A 里面的连续子数组，其中子数组里面的数据的 distinct 只有 K 个
+
+这个题目一想就是滑动窗口
+
+但是 很不好计算 等于 K 的时候 数组有多少个
+
+但是计算 小于等于 K 的比较好计算，可以依据以下规则
+
+以 [1,2,1,2,3] 为例，左边界固定的时候，恰好存在 2 个不同整数的子区间为 [1,2],[1,2,1],[1,2,1,2]，总数为 3。其值为下标 3 - 1 + 1，即区间 [1..3] 的长度。
+
+因为，left, right 同时圈定了一组满足 <= k 的题意的长度范围
+
+那么，包含 left 的子数组数量肯定是 right - left + 1，因为相当于每次给数组里面添加一个数([1,2] [1,2,1] [1,2,1,2]) 所以 right 比 left 多几个数 就能形成几个子数组
+
+```golang
+func subarraysWithKDistinct(A []int, K int) int {
+	return atMostK(A, K) - atMostK(A, K-1)
+}
+
+// 因为求解 恰好K 不好弄 求解 最大K 比较好弄
+func atMostK(A []int, K int) int {
+	i, j := 0, 0
+	// 作为一个 set 保存窗口内的所有 distinct 数据
+	window := make(map[int]int)
+	res := 0
+
+	for j < len(A) {
+		window[A[j]]++
+		j++
+
+		for len(window) > K {
+			window[A[i]]--
+			if window[A[i]] == 0 {
+				delete(window, A[i])
+			}
+			i++
+		}
+
+		res += j - i + 1
+	}
+
+	return res
+}
+```
+
+### [最大连续1的个数 III](https://leetcode-cn.com/problems/max-consecutive-ones-iii/)
+
+最大连续1的个数，A中只有 0 和 1，其中可以变换最多 K 个 0 成为 1，问最长的连续1的长度为多少
+
+滑动窗口，窗口中最多含有 K 个 0 即可
+
+```golang
+func longestOnes(A []int, K int) int {
+	// 返回值
+	res := 0
+	left, right := 0, 0
+	zeros := 0
+	for right < len(A) {
+		// 用外层循环带动 right 移动
+		if A[right] == 0 {
+			zeros++
+		}
+		// 这个时候要移动左侧的 left 保障 zeros 小
+		for zeros > K {
+			if A[left] == 0 {
+				zeros--
+			}
+			left++
+		}
+		// 每轮都去比较即可
+		res = max(res, right - left + 1)
+		right++
+	}
+	return res
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+```
 
 ## 二进制题目
 
@@ -125,15 +209,15 @@ class Solution {
 
 10 / 3 = 3 …… 1 (即为 3 个 3 相乘 余 1)
 
-即为 10 - (3 * 2) - (3 * 1) = 1 其结果为 2 + 1 为 3 
+即为 10 - (3 _ 2) - (3 _ 1) = 1 其结果为 2 + 1 为 3
 
 也就是说任意一种除法可以用一组除数的 2 的次方的乘积的结果来表示。
 
 如 100 / 15 = 6
 
-100 - (15 * 4) - (15 * 2)
+100 - (15 _ 4) - (15 _ 2)
 
-所以可以采用二进制的方法来做，每次用被除数减去最大的一个除数的 2 次方的乘积，循环，直到剩下余数或者 0 
+所以可以采用二进制的方法来做，每次用被除数减去最大的一个除数的 2 次方的乘积，循环，直到剩下余数或者 0
 
 ```golang
 func divide(dividend int, divisor int) int {
@@ -195,7 +279,380 @@ class Solution {
 }
 ```
 
+### [只出现一次的数字 II](https://leetcode-cn.com/problems/single-number-ii/)
+
+数组中的数组只有出现 1 次（一个数字）的和 3 次的数字，找到只出现一次的那个数字
+
+其实就是计算每一位数字出现的次数 % 3
+
+注意 goland 默认的 int 可能值得是 int64 所以强制指定为 32 为长度的 int32 不然没办法处理负数的情况
+
+```golang
+func singleNumber(nums []int) int {
+	var res int32
+
+	for i := 0; i < 32; i++ {
+		var count int32
+		for _, num := range nums {
+			count += (int32(num )>> i) & 1
+		}
+		res += (count % 3) << i
+	}
+	return int(res)
+}
+```
+
+### [只出现一次的数字III](https://leetcode-cn.com/problems/single-number-iii/)
+
+一组数字 其中只有两个数字 出现一次 其余出现两次
+
+```golang
+func singleNumberIII(nums []int) []int {
+	// 如果两个出现一次的数 不同 肯定不为 0
+	sum := 0
+
+	for _, num := range nums {
+		sum ^= num
+	}
+
+	// 那么根据 sum 的某一个不为 0 的位数来分离两类数
+	counter := 1
+	for sum & 1 == 0 {
+		sum >>= 1
+		counter <<= 1
+	}
+
+	// 找到了这个位数 根据 位数 分成两组即可
+	num1, num2 := 0, 0
+
+	for _, num := range nums {
+		// 根据位数分离两类数
+		if num & counter == 0 {
+			num1 ^= num
+		} else {
+			num2 ^= num
+		}
+	}
+	return []int{num1, num2}
+}
+```
+
+### [数字按位与](https://leetcode-cn.com/problems/bitwise-and-of-numbers-range/submissions/)
+
+要求求 m -> n 的范围内的所有数字的 按位与 的结果，因为范围比较大，直接 & 会超时
+
+考虑 3 -> 11 这个范围的数字，红色的 就是相同的二进制前缀部分 实际上就是找到这部分前缀
+
+<pre>
+<span style="color: red">00</span>1011      11
+<span style="color: red">00</span>1010      10
+<span style="color: red">00</span>1001      09
+<span style="color: red">00</span>1000      08
+<span style="color: red">00</span>0111      07
+<span style="color: red">00</span>0110      06
+<span style="color: red">00</span>0101      05
+<span style="color: red">00</span>0100      04
+<span style="color: red">00</span>0011      03
+</pre>
+
+```golang
+func rangeBitwiseAnd(m int, n int) int {
+	if m == n {
+		return m
+	}
+	// 考虑 [5,6,7] 三个数 & 起来的话 实际上是 考虑 最大值 和 最小值的 左侧相等的部分是多少
+	// mov 记录移位了多少次 然后再移动回来
+	mov := 0
+	for m != n {
+		m >>= 1
+		n >>= 1
+		mov++
+	}
+
+	return m << mov
+}
+```
+
 ## 动态规划
+
+### [最后一块石头的重量 II](https://leetcode-cn.com/explore/interview/card/2020-top-interview-questions/280/array/1255/)
+
+其实就是问是否能够形成相等的两部分, 用一个 dp[i][j] 表示前 i 个的能否形成和为 j 的数值，在遍历的时候就可以找到最大的和为多少，之后就减去最大的和即可
+
+```golang
+package classic
+
+// 这道题题干 要求 stones 两两相撞 剩下一块儿 为剩下的石头 最小能形成的重量
+// 其实就是问是否能够形成相等的两部分 因为相等的话 最后形成的石头 为 0
+func lastStoneWeightII(stones []int) int {
+	sum := getStonesSum(stones)
+	// dp[i][j] 表示前 i 个能否形成 何为 j
+	dp := make([][]bool, len(stones)+1)
+	for i := 0; i < len(dp); i++ {
+		dp[i] = make([]bool, sum/2+1)
+		// 合为0一定可以
+		dp[i][0] = true
+	}
+	maxSum := 0
+	for i := 1; i <= len(stones); i++ {
+		for j := 1; j <= sum/2; j++ {
+			// 因为表示的前 i 能不能形成 j 所以 i-1 能形成的话 也是可以的
+			dp[i][j] = dp[i][j] || dp[i-1][j]
+			if j >= stones[i-1] {
+				dp[i][j] = dp[i][j] || dp[i-1][j-stones[i-1]]
+			}
+			if dp[i][j] {
+				maxSum = max(maxSum, j)
+			}
+		}
+	}
+	return sum - 2 * maxSum
+}
+
+func getStonesSum(stones []int) (sum int) {
+	for _, w := range stones {
+		sum += w
+	}
+	return
+}
+```
+
+### 最长子序列套题
+
+#### [最长上升子序列](https://leetcode-cn.com/problems/longest-increasing-subsequence/)
+
+找到非连续的递增子序列，那么我就只需要知道 在我之前的小于我的数字的上升子序列长度为多少
+
+即实际上只需要在访问数组的时候 0 ≤ i < j < nums.length，只需要知道 i 下标对应的最长的子序列是**多少即可。**
+
+这样就变成了一个 dp 问题，小问题就是解决的以 nums[i] 结尾的最长的上升子序列的长度
+
+```golang
+func lengthOfLIS(nums []int) int {
+	// dp[i] 表示 nums[i] 结尾的最长的递增子序列长度为多少
+	dp := make([]int, len(nums))
+	// 初始化 一个数字肯定是递增的
+	for i := 0; i < len(nums); i++ {
+		dp[i] = 1
+	}
+	res := 0
+	for i, num := range nums {
+		for j := 0; j < i; j++ {
+			if num > nums[j] {
+				dp[i] = max(dp[i], dp[j]+1)
+			}
+		}
+		res = max(res, dp[i])
+	}
+	return res
+}
+```
+
+#### [最长上升子序列数量](https://leetcode-cn.com/problems/number-of-longest-increasing-subsequence/)
+
+与上面那个类似 也是一个 dp 问题 只是需要在 dp 遍历的时候 知道 对应最长长度 对应的 LIS 有多少个
+
+```golang
+// 找到 LIS 对应的长度的子序列有多少个
+func findNumberOfLIS(nums []int) int {
+	// 保存 nums[i] 结尾的 LIS 的长度
+	dp := make([]int, len(nums))
+	// 保存 nums[i] 结尾的 LIS 的最长 LIS 的长度
+	counts := make([]int, len(nums))
+	// 初始化
+	for i := 0; i < len(dp); i++ {
+		dp[i] = 1
+		counts[i] = 1
+	}
+
+	maxLen := 0
+	for i := 0; i < len(nums); i++ {
+		for j := 0; j < i; j++ {
+			// 形成 递增
+			if nums[j] < nums[i] {
+				if dp[i] <= dp[j] {
+					// 说明 j 的长度比这个长
+					dp[i] = dp[j] + 1
+					counts[i] = counts[j]
+				} else if dp[j]+1 == dp[i] {
+					// 长度相差 1 说明这个时候 counts 要 + 上 j 的
+					counts[i] += counts[j]
+				}
+			}
+		}
+		maxLen = max(maxLen, dp[i])
+	}
+
+	res := 0
+	for i, count := range counts {
+		if maxLen == dp[i] {
+			res += count
+		}
+	}
+	return res
+}
+```
+
+### [摆动序列](https://leetcode-cn.com/problems/wiggle-subsequence/)
+
+找到摆动序列（摆动序列是一升一降的序列，即前后相减为一正一负）参考注释即可 (这个题目不要求连续 所以还需要不停的保存前一个状态 不用初始化)
+
+```golang
+// 两个数组分别代表上升和下降序列的最大长度
+// 因为 wiggle 的数组 是一升一降 的 up[i] 表示 最后一个 nums[i] 是上升的趋势的最大值
+func wiggleMaxLengthWithoutMemo(nums []int) int {
+	if len(nums) == 0 {
+		return 0
+	}
+	// up[i] down[i] 分别代表上升和下降序列(最后一个是上升或者下降)的 在 index = i 时的最长长度
+	ups, downs := make([]int, len(nums)), make([]int, len(nums))
+	// 初始化
+	ups[0] = 1
+	downs[0] = 1
+	for i := 1; i < len(nums); i++ {
+		if nums[i] > nums[i-1] {
+			// 如果 nums i 是上升趋势 说明那么 之前前一个是下降的趋势的话 可以 加一
+			// 同时 也可以不考虑这个 上升趋势 跟前一个比较
+			ups[i] = max(downs[i-1]+1, ups[i-1])
+			// 此时由于是上升的 所以没有下降的趋势 状态直接转移
+			downs[i] = downs[i-1]
+		} else if nums[i] < nums[i-1] {
+			downs[i] = max(ups[i-1]+1, downs[i-1])
+			ups[i] = ups[i-1]
+		} else {
+			// 相等的情况下是不变的
+			ups[i] = ups[i-1]
+			downs[i] = downs[i-1]
+		}
+	}
+	return max(ups[len(ups)-1], downs[len(downs)-1])
+}
+```
+
+因为只依赖前一个状态 因此可以压缩状态
+
+```golang
+// 两个数组分别代表上升和下降序列的最大长度
+// 因为 wiggle 的数组 是一升一降 的 up[i] 表示 最后一个 nums[i] 是上升的趋势的最大值
+func wiggleMaxLength(nums []int) int {
+	if len(nums) == 0 {
+		return 0
+	}
+	up, down := 1, 1
+
+	for i := 1; i < len(nums); i++ {
+		preDown, PreUp := down, up
+		if nums[i] > nums[i-1] {
+			up = max(down+1, up)
+			down = preDown
+		} else if nums[i] < nums[i-1] {
+			down = max(up+1, down)
+			up = PreUp
+		} else {
+			up = PreUp
+			down = preDown
+		}
+	}
+	return max(up, down)
+}
+```
+
+### 类似摆动序列的题目 [978. 最长湍流子数组](https://leetcode-cn.com/problems/longest-turbulent-subarray/)
+
+找到一个`连续的子数组`能够满足
+
+当 A 的子数组 A[i], A[i+1], ..., A[j] 满足下列条件时，我们称其为湍流子数组：
+
+若 i <= k < j，当 k 为奇数时， A[k] > A[k+1]，且当 k 为偶数时，A[k] < A[k+1]；
+或 若 i <= k < j，当 k 为偶数时，A[k] > A[k+1] ，且当 k 为奇数时， A[k] < A[k+1]。
+也就是说，如果**比较符号在子数组中的每个相邻元素对之间翻转**，则该子数组是湍流子数组。
+
+```golang
+func maxTurbulenceSize(arr []int) int {
+	// 仍然是一升一降 才能使符号反号
+
+	up, down := 1, 1
+	res := 1
+	for i := 1; i < len(arr); i++ {
+		if arr[i] > arr[i-1] {
+			up = down+1
+			// 因为是要连续的 一升一降 所以这个地方需要重新初始化为 1
+			down = 1
+		} else if arr[i] < arr[i-1] {
+			down = up + 1
+			up = 1
+		} else {
+			up, down = 1, 1
+		}
+		// 因为重新初始化 所以需要对每一个状态进行比较保存
+		res = max(res, max(up, down))
+	}
+
+	return res
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+```
+
+### [俄罗斯套娃信封问题](https://leetcode-cn.com/problems/russian-doll-envelopes/)
+
+根据信封的宽度和高度 判断能够装下的信封的最大长度有多少
+
+高度和宽度均小于另外一个信封的 可以装进去
+
+实际上是一个 找到最长递增序列的问题
+
+- 按照宽度进行排序，这样从一个维度上看 所有的信封都是宽度有序的
+- 再次基础上 如果要前一个信封能够装在后一个信封里面 说明长度是一个逆序的
+- 最后只需要在这个排序的数组里面 找到长度的一个最长递增序列即可
+
+```golang
+func maxEnvelopes(envelopes [][]int) int {
+	// envelopes[0] 相等 说明宽度相等 这个时候 只需要更长的排在后面即可
+	// envelopes[0] 不等 说明宽度不等 这个时候 只需要只需要根据长度大小从大到小排序即可
+	sort.Slice(envelopes, func(i, j int) bool {
+		if envelopes[i][0] == envelopes[j][0] {
+			return envelopes[i][1] > envelopes[j][1]
+		} else {
+			return envelopes[i][0] < envelopes[j][0]
+		}
+	})
+
+	// 因为现在这样排序之后 信封的宽度 一定是满足顺序的 那么只需要判断长度 能够形成的最长的递增子序列是多长
+	dp := make([]int, len(envelopes))
+	// 1 个数字也能有一个长度
+	for i := 0; i < len(dp); i++ {
+		dp[i] = 1
+	}
+	
+	res := 0
+	for i := 0; i < len(dp); i++ {
+		tmp := 0
+		for j := 0; j < i; j++ {
+			if envelopes[i][1] > envelopes[j][1] {
+				tmp = max(tmp, dp[j])
+			}
+		}
+		dp[i] = tmp + 1
+		res = max(res, dp[i])
+	}
+
+	return res
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+```
 
 ### [解码方法](https://leetcode-cn.com/problems/decode-ways/)
 
@@ -231,6 +688,160 @@ func canDecoding(s string) bool {
 		return false
 	}
 	return true
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+```
+
+### 子序列
+
+#### [不同的子序列](https://leetcode-cn.com/problems/distinct-subsequences/)
+
+```golang
+func numDistinct(s string, t string) int {
+	// dp[i][j] 表示 s[i-1] 和 t[j-1] 之间有多少组合
+	dp := make([][]int, len(s)+1)
+	for i := 0; i <= len(s); i++ {
+		dp[i] = make([]int, len(t)+1)
+	}
+
+	// 初始化 只要 t 是空 那么一定可以 在 s 中找到
+	for i := 0; i <= len(s); i++ {
+		dp[i][0] = 1
+	}
+
+	for i := 1; i <= len(s); i++ {
+		for j := 1; j <= len(t); j++ {
+			if s[i-1] == t[j-1] {
+				// 分为两个部分 因为可以不算当前的 s 串的最后一个 也可以算上
+				// 因为 s 串的前面部分 可能已经匹配到了
+				dp[i][j] = dp[i-1][j-1] + dp[i-1][j]
+			} else {
+				dp[i][j] = dp[i-1][j]
+			}
+		}
+	}
+
+	return dp[len(s)][len(t)]
+}
+```
+
+### 打家劫舍系列题
+
+#### [打家劫舍I](https://leetcode-cn.com/problems/house-robber/)
+
+这道题是经典的 dp 问题。题目要求的是不能抢劫相邻的位置，那么这种条件下的最大和是多少。
+
+- 一个位置会有两个状态，拿当前这个地方的值 或者 不拿
+- 下个位置的状态就会由上一个位置决定
+	- 如果当前位置拿了值的话，上一个位置只能不拿
+	- 如果当前位置没有拿，上一个位置只需要取拿 or 不拿的 较大值
+
+优化下 dp 数组 其实可以用一对值表示前面一个循环中拿了的最大值即可
+
+```golang
+func rob(nums []int) int {
+	if len(nums) <= 0 {
+		return 0
+	}
+	// 优化的目的在于去掉数组 因为现在直接最大的就是
+	notRob, rob := 0, 0
+	res := 0
+
+	for _, num := range nums {
+		rm := rob
+		rob = notRob + num
+		notRob = max(notRob, rm)
+		res = max(notRob, rob)
+	}
+	return res
+}
+```
+
+#### [打家劫舍II](https://leetcode-cn.com/problems/house-robber-ii/)
+
+这个是打劫的循环数组，因为 rob 了第一个 就不能 rob 最后一个
+
+所以分别访问从 [1:len(nums)] 和 [0:len(nums)-1] 然后比较大小即可
+
+```golang
+func rob(nums []int) int {
+	if len(nums) <= 0 {
+		return 0
+	}
+	if len(nums) == 1 {
+		return nums[0]
+	}
+	// 因为是首尾相连的
+	robFirst := getMaxRob(nums[:len(nums)-1])
+	notRobFirst := getMaxRob(nums[1:])
+	return max(robFirst, notRobFirst)
+}
+
+func getMaxRob(nums []int) int {
+	notRob, rob := 0, 0
+	res := 0
+
+	for _, num := range nums {
+		rem := rob
+		rob = notRob + num
+		notRob = max(rem, notRob)
+		res = max(res, max(rob, notRob))
+	}
+	return res
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+```
+
+#### [打家劫舍III](https://leetcode-cn.com/problems/house-robber-iii/submissions/)
+
+这次是树，实际上还是要知道子节点上的话 rob 和 notRob 的状态即可，然后递推到当前的状态
+
+```golang
+func rob(root *TreeNode) int {
+	var res int
+	recursionRobTree(root, &res)
+	return res
+}
+
+// recursionRobTree 返回值是 rob 当前这个 root 还不 不 rob 的值
+func recursionRobTree(root *TreeNode, res *int) (int, int) {
+	if root == nil {
+		return 0, 0
+	}
+
+	leftRob, leftNotRob := recursionRobTree(root.Left, res)
+	rightRob, rightNotRob := recursionRobTree(root.Right, res)
+
+	// 如果 rob 当前这个root 节点的话 意味着 两个节点都不可以rob
+	rob := leftNotRob + rightNotRob + root.Val
+	// 如果 不 rob 这个节点的话 子节点可以 rob 也可以不 rob
+	notRob := getArrayMax(leftRob + rightRob, rightRob + leftNotRob, rightNotRob + leftRob, rightNotRob + leftNotRob)
+	*res = max(*res, rob)
+	*res = max(*res, notRob)
+	return rob, notRob
+}
+
+func getArrayMax(nums ...int) int {
+	if len(nums) == 0 {
+		return -1
+	}
+	res := nums[0]
+	for _, num := range nums {
+		res = max(res, num)
+	}
+	return res
 }
 
 func max(a, b int) int {
@@ -431,9 +1042,105 @@ public boolean recursion(String s, String p, int sIndex, int pIndex) {
 
 ## 数据结构
 
+### 栈和队列
+
+#### 队列-[滑动窗口的最大值](https://leetcode-cn.com/problems/sliding-window-maximum/)
+
+最大 queue 的队列
+
+```golang
+type MaxQueue struct {
+	stack1 MaxStack
+	stack2 MaxStack
+}
+
+func (queue *MaxQueue) Push(val int) {
+	queue.stack1.Push(val)
+}
+
+func (queue *MaxQueue) shift() int {
+	if queue.stack2.Len() == 0 {
+		for queue.stack1.Len() > 0 {
+			queue.stack2.Push(queue.stack1.Pop())
+		}
+	}
+	return queue.stack2.Pop()
+}
+
+func (queue *MaxQueue) Max() int {
+	if queue.stack1.Len() == 0 {
+		return queue.stack2.Max()
+	} else if queue.stack2.Len() == 0 {
+		return queue.stack1.Max()
+	}
+	return max(queue.stack2.Max(), queue.stack1.Max())
+}
+
+func (queue *MaxQueue) Len() int {
+	return queue.stack1.Len() + queue.stack2.Len()
+}
+
+type MaxStack struct {
+	// 这两个不用 slice 用 list 之类的链表 可能会快一点儿
+	data  []int
+	maxes []int
+}
+
+func (ms *MaxStack) Push(val int) {
+	ms.data = append(ms.data, val)
+	if len(ms.maxes) > 0 {
+		ms.maxes = append(ms.maxes, max(ms.maxes[len(ms.maxes)-1], val))
+	} else {
+		ms.maxes = append(ms.maxes, val)
+	}
+}
+
+func (ms *MaxStack) Pop() int {
+	res := ms.data[len(ms.data)-1]
+	ms.data = ms.data[:len(ms.data)-1]
+	ms.maxes = ms.maxes[:len(ms.maxes)-1]
+	return res
+}
+
+func (ms *MaxStack) Max() int {
+	return ms.maxes[len(ms.maxes)-1]
+}
+
+func (ms *MaxStack) Len() int {
+	return len(ms.data)
+}
+```
+
+使用代码
+
+```golang
+func maxSlidingWindow(nums []int, k int) []int {
+	queue := MaxQueue{
+		stack1: MaxStack{},
+		stack2: MaxStack{},
+	}
+
+	for i := 0; i < k; i++ {
+		queue.Push(nums[i])
+	}
+	res := make([]int, 0)
+	for i := k; i < len(nums); i++ {
+		res = append(res, queue.Max())
+		queue.shift()
+		queue.Push(nums[i])
+	}
+	res = append(res, queue.Max())
+	return res
+}
+```
+
+#### 栈-[计算器](https://leetcode-cn.com/problems/basic-calculator-ii/)
+
+中值表达式转波兰表达式（实际上是）
+
 ### 链表
 
-#### [删除倒数的第N个节点](https://leetcode-cn.com/problems/remove-nth-node-from-end-of-list/)
+#### [删除倒数的第 N 个节点](https://leetcode-cn.com/problems/remove-nth-node-from-end-of-list/)
 
 ```golang
 func removeNthFromEnd(head *ListNode, n int) *ListNode {
@@ -461,7 +1168,7 @@ func removeNthFromEnd(head *ListNode, n int) *ListNode {
 }
 ```
 
-#### [合并k个已经排序的链表](https://leetcode-cn.com/problems/merge-k-sorted-lists/)
+#### [合并 k 个已经排序的链表](https://leetcode-cn.com/problems/merge-k-sorted-lists/)
 
 类似归并排序
 
@@ -523,7 +1230,7 @@ func reverseList(head *ListNode) *ListNode {
 	for head != nil {
         // 用一个 局部变量 来保存下一个节点
         next := head.Next
-        
+
         // 反转当前遍历的 head 节点，指向已经反转完毕的头结点
 		head.Next = pre
         pre = head
@@ -534,9 +1241,9 @@ func reverseList(head *ListNode) *ListNode {
 }
 ```
 
-##### [反转链表II](https://leetcode-cn.com/problems/reverse-linked-list-ii/)
+##### [反转链表 II](https://leetcode-cn.com/problems/reverse-linked-list-ii/)
 
-反转链表II是反转链表下表从 m -> n 的一个链表，实际上采用上述的反转的操作，即可反转 m -> n 之间的节点
+反转链表 II 是反转链表下表从 m -> n 的一个链表，实际上采用上述的反转的操作，即可反转 m -> n 之间的节点
 
 ```golang
 // 主函数
@@ -581,7 +1288,7 @@ func reverseBetweenNodes(startNode, endNodeNext *ListNode) (*ListNode, *ListNode
 
 ##### [reverse K group](https://leetcode-cn.com/problems/reverse-nodes-in-k-group/)
 
-reverse K group 的更进一步，在上面一题的基础上，每K个节点反转一次
+reverse K group 的更进一步，在上面一题的基础上，每 K 个节点反转一次
 
 ```golang
 
@@ -636,7 +1343,7 @@ func reverseBetweenNodes(startNode, endNodeNext *ListNode) (*ListNode, *ListNode
 
 #### [树的遍历](https://leetcode-cn.com/problems/binary-tree-inorder-traversal/)
 
-##### 中序遍历
+##### [中序遍历](https://leetcode-cn.com/problems/binary-tree-inorder-traversal/)
 
 ```golang
 func inorderTraversal(root *TreeNode) []int {
@@ -686,9 +1393,45 @@ func preorderTraversal(root *TreeNode) []int {
 }
 ```
 
-##### [后序遍历]()
+##### [后序遍历](https://leetcode-cn.com/problems/binary-tree-postorder-traversal/)
+
+```golang
+func postorderTraversal(root *TreeNode) []int {
+	res := make([]int, 0)
+
+	stack := list.New()
+	// 标识这个node是不是第二次访问
+	stackForFlag := list.New()
+	for root != nil || stack.Len() > 0 {
+		for root != nil {
+			stack.PushBack(root)
+			stackForFlag.PushBack(false)
+			root = root.Left
+		}
+
+		if stack.Len() > 0 {
+			root = stack.Remove(stack.Back()).(*TreeNode)
+			flag := stackForFlag.Remove(stackForFlag.Back()).(bool)
+
+			// 说明是第二次访问 这个时候要访问父亲节点
+			if flag {
+				res = append(res, root.Val)
+				root = nil
+			} else {
+				// 第一次访问
+				stack.PushBack(root)
+				stackForFlag.PushBack(true)
+				root = root.Right
+			}
+		}
+	}
+	return res
+}
+```
 
 ##### [层次遍历]()
+
+1. 普通层次遍历
 
 ```golang
 func levelOrder(root *TreeNode) [][]int {
@@ -726,7 +1469,7 @@ func levelOrder(root *TreeNode) [][]int {
 }
 ```
 
-zigzag 的层次遍历
+2. zigzag 的层次遍历
 
 ```golang
 package classic
@@ -778,6 +1521,65 @@ func zigzagLevelOrder(root *TreeNode) [][]int {
 }
 ```
 
+##### [前缀树](https://leetcode-cn.com/problems/implement-trie-prefix-tree/)
+
+实现用字符串的前缀来索引的结构树
+
+```golang
+// Trie 之间通过 字符 关联 上一个 trie 会通过字符作为边连接下一个节点
+type Trie struct {
+	data  []*Trie // 存储索引结构的数 因为只包含 a-z 的字母 索引直接数组即可 不然用 map 会更好
+	isEnd bool    // 是否结束节点
+}
+
+/** Initialize your data structure here. */
+func Constructor() Trie {
+	return Trie{
+		data:  make([]*Trie, 26),
+		isEnd: false,
+	}
+}
+
+/** Inserts a word into the trie. */
+func (this *Trie) Insert(word string) {
+	tmp := this
+	for _, char := range word {
+		if tmp.data[char-'a'] == nil {
+			tmp.data[char-'a'] = &Trie{
+				data:  make([]*Trie, 26),
+				isEnd: false,
+			}
+		}
+		tmp = tmp.data[char-'a']
+	}
+	tmp.isEnd = true
+}
+
+/** Returns if the word is in the trie. */
+func (this *Trie) Search(word string) bool {
+	tmp := this
+	for _, char := range word {
+		if tmp.data[char-'a'] == nil {
+			return false
+		}
+		tmp = tmp.data[char-'a']
+	}
+	return tmp.isEnd
+}
+
+/** Returns if there is any word in the trie that starts with the given prefix. */
+func (this *Trie) StartsWith(prefix string) bool {
+	tmp := this
+	for _, char := range prefix {
+		if tmp.data[char-'a'] == nil {
+			return false
+		}
+		tmp = tmp.data[char-'a']
+	}
+	return true
+}
+```
+
 ### 图
 
 #### 并查集的数据结构
@@ -797,10 +1599,11 @@ type Union struct {
 	parents []int // 存储树的数据结构 parents[i] 表示连接到该节点的父节点的索引 如果不能用 int 来表示 可以考虑 map 类的数据结构
 }
 ```
+
 ##### 并查集的操作
 
 - union (联合，关联两个点)
-- find  (查找，找到当前点的最终的父节点)
+- find (查找，找到当前点的最终的父节点)
 
 所以，实际上 如果 r1 r2 之间有连接线的话，要关联 r1 r2 的操作就是。
 
@@ -979,6 +1782,7 @@ func makeConnected(n int, connections [][]int) int {
 - char == '/' 表示 03 12 分别连通
 
 内部的连通完毕后，
+
 - 还可以知道 1 一定跟下一个 3 连通
 - 2 一定跟下一行的 0 连通
 
@@ -1112,5 +1916,148 @@ func swimInWater(grid [][]int) int {
 		}
 	}
 	return -1
+}
+```
+
+### 拓扑排序
+
+- 逆后续排列
+- 遍历出度为0的点
+
+#### [课程表](https://leetcode-cn.com/problems/course-schedule/)
+
+这道题本质上就是拓扑排序
+
+简单的做法就是用 dfs 去判断是否成环
+
+```golang
+func canFinish(numCourses int, prerequisites [][]int) bool {
+	// 有向图
+	mapOfCourses := make([][]int, numCourses)
+	for i := 0; i < numCourses; i++ {
+		mapOfCourses[i] = make([]int, 0)
+	}
+	for _, prerequisite := range prerequisites {
+		mapOfCourses[prerequisite[1]] = append(mapOfCourses[prerequisite[1]], prerequisite[0])
+	}
+	// 保存已经访问过的节点 这样可以避免重复访问
+	totalMemo := make([]bool, numCourses)
+	for i := 0; i < numCourses; i++ {
+		if !dfsCanFinish(mapOfCourses, make([]bool, numCourses), totalMemo, i) {
+			return false
+		}
+	}
+	return true
+}
+
+// 通过 dfs 的方法判断是否成环
+// 用 memo 来记录一次循环中访问的节点
+func dfsCanFinish(mapOfCourses [][]int, memo, totalMemo []bool, start int) bool {
+	if totalMemo[start] {
+		return true
+	}
+	totalMemo[start] = true
+	memo[start] = true
+	for _, adj := range mapOfCourses[start] {
+		if !memo[adj] {
+			// 截断 有环直接返回
+			if !dfsCanFinish(mapOfCourses, memo, totalMemo, adj) {
+				return false
+			}
+		} else {
+			// 这个地方就是找到了环
+			return false
+		}
+	}
+	memo[start] = false
+	return true
+}
+```
+
+拓扑排序 遍历入度为 0 的点
+
+```golang
+func canFinish(numCourses int, prerequisites [][]int) bool {
+
+	// 入度为 0 的点为起点
+	inDegree := make([]int, numCourses)
+	for _, prerequisite := range prerequisites {
+		// 让有向图的接受线的一端 入度++
+		inDegree[prerequisite[0]]++
+	}
+
+	// 保存入度为 0 的点
+	inDegreeEqualZero := list.New()
+	for i, in := range inDegree {
+		if in == 0 {
+			inDegreeEqualZero.PushBack(i)
+		}
+	}
+
+	// 遍历入度为 0 的点
+	// 每次删除一条边 判断下一个点 是否入度为0 入度为 0 加入到 map 中 不停的遍历 直到没有点
+	for inDegreeEqualZero.Len() > 0 {
+		node := inDegreeEqualZero.Remove(inDegreeEqualZero.Front()).(int)
+		for _, prerequisite := range prerequisites {
+			if node == prerequisite[1] {
+				inDegree[prerequisite[0]]--
+				if inDegree[prerequisite[0]] == 0 {
+					inDegreeEqualZero.PushBack(prerequisite[0])
+				}
+			}
+		}
+	}
+	for i := 0; i < numCourses; i++ {
+		// 这个地方说明还有点相连，因此是无法完成的
+		if inDegree[i] != 0 {
+			return false
+		}
+	}
+	return true
+}
+```
+
+## 杂题
+
+### [递增的三元子序列](https://leetcode-cn.com/problems/increasing-triplet-subsequence/)
+
+首先想到嘛，用两个数组分别存储从左到右的最小值和最右到左的最大值，那么如果nums中一个数num大于这个最小值小于这个最大值，是一定可以的
+
+```golang
+func increasingTriplet(nums []int) bool {
+	if len(nums) == 0 {
+		return false
+	}
+	mins, maxes := make([]int, len(nums)), make([]int, len(nums))
+	mins[0] = nums[0]
+	for i := 1; i < len(nums); i++ {
+		mins[i] = min(mins[i-1], nums[i])
+	}
+
+	maxes[len(nums)-1] = nums[len(nums)-1]
+	for i := len(nums) - 2; i >= 0; i-- {
+		maxes[i] = max(maxes[i+1], nums[i])
+	}
+	
+	for i, num := range nums {
+		if num > mins[i] && num < maxes[i] {
+			return true
+		}
+	}
+	return false
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 ```
