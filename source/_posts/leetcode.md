@@ -160,9 +160,9 @@ func atMostK(A []int, K int) int {
 }
 ```
 
-### [最大连续1的个数 III](https://leetcode-cn.com/problems/max-consecutive-ones-iii/)
+### [最大连续 1 的个数 III](https://leetcode-cn.com/problems/max-consecutive-ones-iii/)
 
-最大连续1的个数，A中只有 0 和 1，其中可以变换最多 K 个 0 成为 1，问最长的连续1的长度为多少
+最大连续 1 的个数，A 中只有 0 和 1，其中可以变换最多 K 个 0 成为 1，问最长的连续 1 的长度为多少
 
 滑动窗口，窗口中最多含有 K 个 0 即可
 
@@ -196,6 +196,184 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+```
+
+### [绝对差不超过限制的最长连续子数组](https://leetcode-cn.com/problems/longest-continuous-subarray-with-absolute-diff-less-than-or-equal-to-limit/)
+
+> 给定一个数组 nums 和 limit，找到最长的连续数组，其中任意两个数的差值不超过 limit
+
+上面这句话换个说法说的就是 最大值和最小值 之差不超过 limit，因此如果能够 o(1) 的拿到窗口的 最大最小值，那么就比较方便
+
+```golang
+package classic
+
+type MaxMinQueue struct {
+	stack1 MaxMinStack
+	stack2 MaxMinStack
+}
+
+func (queue *MaxMinQueue) Push(val int) {
+	queue.stack1.Push(val)
+}
+
+func (queue *MaxMinQueue) Shift() int {
+	if queue.stack2.Len() == 0 {
+		for queue.stack1.Len() > 0 {
+			queue.stack2.Push(queue.stack1.Pop())
+		}
+	}
+	return queue.stack2.Pop()
+}
+
+func (queue *MaxMinQueue) Max() int {
+	if queue.stack1.Len() == 0 {
+		return queue.stack2.Max()
+	} else if queue.stack2.Len() == 0 {
+		return queue.stack1.Max()
+	}
+	return max(queue.stack2.Max(), queue.stack1.Max())
+}
+
+func (queue *MaxMinQueue) Min() int {
+	if queue.stack1.Len() == 0 {
+		return queue.stack2.Min()
+	} else if queue.stack2.Len() == 0 {
+		return queue.stack1.Min()
+	}
+	return min(queue.stack2.Min(), queue.stack1.Min())
+}
+
+func (queue *MaxMinQueue) Len() int {
+	return queue.stack1.Len() + queue.stack2.Len()
+}
+
+type MaxMinStack struct {
+	// 这两个不用 slice 用 list 之类的链表 可能会快一点儿
+	data  []int
+	maxes []int
+	mins  []int
+}
+
+func (ms *MaxMinStack) Push(val int) {
+	ms.data = append(ms.data, val)
+	if len(ms.maxes) > 0 {
+		ms.maxes = append(ms.maxes, max(ms.maxes[len(ms.maxes)-1], val))
+	} else {
+		ms.maxes = append(ms.maxes, val)
+	}
+
+	if len(ms.mins) > 0 {
+		ms.mins = append(ms.mins, min(ms.mins[len(ms.mins)-1], val))
+	} else {
+		ms.mins = append(ms.mins, val)
+	}
+}
+
+func (ms *MaxMinStack) Pop() int {
+	res := ms.data[len(ms.data)-1]
+	ms.data = ms.data[:len(ms.data)-1]
+	ms.maxes = ms.maxes[:len(ms.maxes)-1]
+	ms.mins = ms.mins[:len(ms.mins)-1]
+	return res
+}
+
+func (ms *MaxMinStack) Max() int {
+	return ms.maxes[len(ms.maxes)-1]
+}
+
+func (ms *MaxMinStack) Min() int {
+	return ms.mins[len(ms.mins)-1]
+}
+
+func (ms *MaxMinStack) Len() int {
+	return len(ms.data)
+}
+
+// 找到一个最长的连续子数组 其任意两个元素之间的差值 小于等于 limit
+func longestSubarray(nums []int, limit int) int {
+	// 就是维护一个 queue 为了方便 应该在 o(1) 的时间内获得其 最大最小值
+	left, right := 0, 0
+	window := &MaxMinQueue{stack1: MaxMinStack{}, stack2: MaxMinStack{}}
+	res := 0
+	for right < len(nums) {
+		window.Push(nums[right])
+		if window.Len() > 0 && window.Max() - window.Min() <= limit {
+			res = max(res, right - left + 1)
+		}
+
+		for window.Len() > 0 && window.Max() - window.Min() > limit {
+			window.Shift()
+			left++
+		}
+		right++
+	}
+	return res
+}
+```
+
+### [爱生气的书店老板](https://leetcode-cn.com/problems/grumpy-bookstore-owner/)
+
+给定一个 grumpy 以及 custormers 在 grumpy == 0 的时候 可以加上 custormers 的对应值，问如果有连续的 X 个 gurmpy 可以为 0 最大 customers 的和为多少
+
+- 自己的做法
+
+维护一个前缀和数组 sum，表示前 i 个的和为多少，那么就可以用滑动窗口将数组分为三段
+
+[0->l](可以用 sum 数组求得) [l->r](全部变为 0 所以是直接求和的) [r->len](可以用 sum 数组求得)
+
+```java
+public int maxSatisfiedWithSumArray(int[] customers, int[] grumpy, int X) {
+		// sum[i] 保存 customers[i] 之前的所有满足要求的和
+		int[] sum = new int[customers.length + 1];
+
+		for (int i = 1; i <= customers.length; i++) {
+				sum[i] = sum[i - 1];
+				if (grumpy[i - 1] == 0) {
+						sum[i] += customers[i - 1];
+				}
+		}
+		// 结果
+		int res = 0;
+		// 维护一个窗口 这个窗口长度为 X 全部认为是可以加的
+		int windowSum = 0;
+		for (int i = 0; i < X; i++) {
+				windowSum += customers[i];
+		}
+		for (int i = X; i < customers.length; i++) {
+				res = Math.max(res, sum[i-X] + windowSum + sum[customers.length] - sum[i]);
+				windowSum = windowSum - customers[i - X] + customers[i];
+		}
+		res = Math.max(res, sum[customers.length-X] + windowSum);
+		return res;
+}
+```
+
+- 题解
+
+题解更进一步，将 customers 数组根据 grumpy 的取值分为两类，一类是 grumpy 等于 1 那么是可以直接加上的，一类是 grumpy == 0，可以在长度为 X 的滑动窗口中 increase 到 第一类的
+
+```java
+public int maxSatisfied(int[] customers, int[] grumpy, int X) {
+		// 分两步计算 一个计算满足要求的所有和 total 另一个窗口可以额外增加的值
+		int total = 0;
+		for (int i = 0; i < customers.length; i++) {
+				// grumpy[i] == 0 的时候 才加上
+				total += (1 - grumpy[i]) * customers[i];
+		}
+		// 遍历可以增加的值 找到最大的
+		int window = 0;
+		// 窗口遍历可以增加的值
+		for (int i = 0; i < X; i++) {
+				// 窗口可以增加的值 是 grumpy[i] == 1
+				window += grumpy[i] * customers[i];
+		}
+		int res = window;
+		for (int i = X; i < customers.length; i++) {
+				window = window - grumpy[i-X] * customers[i-X] + grumpy[i] * customers[i];
+				res = Math.max(res, window);
+		}
+		return total + res;
 }
 ```
 
@@ -302,7 +480,7 @@ func singleNumber(nums []int) int {
 }
 ```
 
-### [只出现一次的数字III](https://leetcode-cn.com/problems/single-number-iii/)
+### [只出现一次的数字 III](https://leetcode-cn.com/problems/single-number-iii/)
 
 一组数字 其中只有两个数字 出现一次 其余出现两次
 
@@ -561,10 +739,10 @@ func wiggleMaxLength(nums []int) int {
 
 找到一个`连续的子数组`能够满足
 
-当 A 的子数组 A[i], A[i+1], ..., A[j] 满足下列条件时，我们称其为湍流子数组：
+当 A  的子数组  A[i], A[i+1], ..., A[j]  满足下列条件时，我们称其为湍流子数组：
 
-若 i <= k < j，当 k 为奇数时， A[k] > A[k+1]，且当 k 为偶数时，A[k] < A[k+1]；
-或 若 i <= k < j，当 k 为偶数时，A[k] > A[k+1] ，且当 k 为奇数时， A[k] < A[k+1]。
+若  i <= k < j，当 k  为奇数时， A[k] > A[k+1]，且当 k 为偶数时，A[k] < A[k+1]；
+或 若  i <= k < j，当 k 为偶数时，A[k] > A[k+1] ，且当 k  为奇数时， A[k] < A[k+1]。
 也就是说，如果**比较符号在子数组中的每个相邻元素对之间翻转**，则该子数组是湍流子数组。
 
 ```golang
@@ -630,7 +808,7 @@ func maxEnvelopes(envelopes [][]int) int {
 	for i := 0; i < len(dp); i++ {
 		dp[i] = 1
 	}
-	
+
 	res := 0
 	for i := 0; i < len(dp); i++ {
 		tmp := 0
@@ -733,14 +911,14 @@ func numDistinct(s string, t string) int {
 
 ### 打家劫舍系列题
 
-#### [打家劫舍I](https://leetcode-cn.com/problems/house-robber/)
+#### [打家劫舍 I](https://leetcode-cn.com/problems/house-robber/)
 
 这道题是经典的 dp 问题。题目要求的是不能抢劫相邻的位置，那么这种条件下的最大和是多少。
 
 - 一个位置会有两个状态，拿当前这个地方的值 或者 不拿
 - 下个位置的状态就会由上一个位置决定
-	- 如果当前位置拿了值的话，上一个位置只能不拿
-	- 如果当前位置没有拿，上一个位置只需要取拿 or 不拿的 较大值
+  - 如果当前位置拿了值的话，上一个位置只能不拿
+  - 如果当前位置没有拿，上一个位置只需要取拿 or 不拿的 较大值
 
 优化下 dp 数组 其实可以用一对值表示前面一个循环中拿了的最大值即可
 
@@ -763,7 +941,7 @@ func rob(nums []int) int {
 }
 ```
 
-#### [打家劫舍II](https://leetcode-cn.com/problems/house-robber-ii/)
+#### [打家劫舍 II](https://leetcode-cn.com/problems/house-robber-ii/)
 
 这个是打劫的循环数组，因为 rob 了第一个 就不能 rob 最后一个
 
@@ -804,7 +982,7 @@ func max(a, b int) int {
 }
 ```
 
-#### [打家劫舍III](https://leetcode-cn.com/problems/house-robber-iii/submissions/)
+#### [打家劫舍 III](https://leetcode-cn.com/problems/house-robber-iii/submissions/)
 
 这次是树，实际上还是要知道子节点上的话 rob 和 notRob 的状态即可，然后递推到当前的状态
 
@@ -1922,7 +2100,7 @@ func swimInWater(grid [][]int) int {
 ### 拓扑排序
 
 - 逆后续排列
-- 遍历出度为0的点
+- 遍历出度为 0 的点
 
 #### [课程表](https://leetcode-cn.com/problems/course-schedule/)
 
@@ -2021,7 +2199,7 @@ func canFinish(numCourses int, prerequisites [][]int) bool {
 
 ### [递增的三元子序列](https://leetcode-cn.com/problems/increasing-triplet-subsequence/)
 
-首先想到嘛，用两个数组分别存储从左到右的最小值和最右到左的最大值，那么如果nums中一个数num大于这个最小值小于这个最大值，是一定可以的
+首先想到嘛，用两个数组分别存储从左到右的最小值和最右到左的最大值，那么如果 nums 中一个数 num 大于这个最小值小于这个最大值，是一定可以的
 
 ```golang
 func increasingTriplet(nums []int) bool {
@@ -2038,7 +2216,7 @@ func increasingTriplet(nums []int) bool {
 	for i := len(nums) - 2; i >= 0; i-- {
 		maxes[i] = max(maxes[i+1], nums[i])
 	}
-	
+
 	for i, num := range nums {
 		if num > mins[i] && num < maxes[i] {
 			return true
@@ -2059,5 +2237,200 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+```
+
+### 二分
+
+#### [找出第 k 小的距离对](https://leetcode-cn.com/problems/find-k-th-smallest-pair-distance/)
+
+距离差定义为 数组中 任意一对数之间的差的绝对值
+
+- 因此找到第 K 个最小距离，一个直观的解法就是，遍历所有的差，放入到只有 k 个数的大顶堆中，那么堆顶都是结果。（memory 爆了）
+
+```golang
+type IntHeap []int
+
+func (h IntHeap) Len() int           { return len(h) }
+func (h IntHeap) Less(i, j int) bool { return h[i] > h[j] }
+func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+func (h *IntHeap) Push(x interface{}) {
+	// Push and Pop use pointer receivers because they modify the slice's length,
+	// not just its contents.
+	*h = append(*h, x.(int))
+}
+
+func (h *IntHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
+
+// 找到 nums 中第k小一对数之间的最短距离（距离为两数之差）
+// heap outOfMemory
+func smallestDistancePairWithHeap(nums []int, k int) int {
+	hp := &IntHeap{}
+	heap.Init(hp)
+
+	for i := 0; i < len(nums); i++ {
+		for j := i + 1; j < len(nums); j++ {
+			heap.Push(hp, int(math.Abs(float64(nums[i]-nums[j]))))
+			if hp.Len() > k {
+				heap.Pop(hp)
+			}
+		}
+	}
+
+	return (*hp)[0]
+}
+```
+
+- 另外一个想法就是二分
+
+1. 二分的范围是从差值的范围出发，即 0 -> max(nums) - min(nums)，那么 max min 可以直接排序取首尾即可
+2. 但是如何统计，二分中小于 mid 的差值的数量 以 [1,2,2,3,4] 为例，固定右边界为 4 的时候 1 -> 4 中间可能小于 k 的数字组合为 [1,4] [2,4] [2,4] [3,4] 其结果为 j - i = 4 - 0 (4 的下标 4 1 的下标 1)
+
+```golang
+func smallestDistancePair(nums []int, k int) int {
+	if len(nums) == 0 {
+		return -1
+	}
+	sort.Ints(nums)
+	// i, j 表示的是 nums 中的 数据差 的范围
+	i, j := 0, nums[len(nums)-1] - nums[0]
+	for i < j {
+		// mid 表示的是中间的差值
+		mid := i + (j - i) / 2
+		// 找到小于等于 mid 的数值差的数量
+		count := findDistancePair(nums, mid)
+
+		if count > k {
+			j = mid - 1
+		} else if count < k {
+			i = mid + 1
+		} else {
+			// 因为是小于等于 所以可能 mid 是解 也可以是在左边
+			j = mid
+		}
+	}
+	return i
+}
+
+func findDistancePair(nums []int, distance int) int {
+	res := 0
+	// 固定右边界
+	i, j := 0, 0
+	for j < len(nums) {
+		// 统计出来的是小于等于 distance 的数量
+		for i < j && nums[j] - nums[i] > distance {
+			i++
+		}
+		// 因为是递增的 如果这个时候 1,2,2,3,4 相当于固定右边界 那么排序完的数组 左边能够形成的满足条件的数对 应该是 j - i 个
+		res += j - i
+		j++
+	}
+	return res
+}
+```
+
+### 字典树
+
+#### [猜字谜](https://leetcode-cn.com/problems/number-of-valid-words-for-each-puzzle/)
+
+暴力解法，用 word 去匹配 puzzle 的 set 超时了。
+
+而原题目中 words 的数量比 puzzles 的数量高一个数量级，因此可以使用 字典树 压缩 word 的数量，用 puzzle 进行比较
+
+```java
+private class TrieTree {
+		int currency;
+		TrieTree[] child;
+
+		public TrieTree() {
+				this.currency = 0;
+				// 因为只包含小写字母
+				this.child = new TrieTree[26];
+		}
+
+		public void add(char[] word) {
+				TrieTree cur = this;
+
+				for (char c : word) {
+						if (cur.child[c - 'a'] == null) {
+								cur.child[c - 'a'] = new TrieTree();
+						}
+						cur = cur.child[c - 'a'];
+				}
+				// currency 表示有一个 word 到达了这个底
+				cur.currency++;
+		}
+}
+
+public List<Integer> findNumOfValidWords(String[] words, String[] puzzles) {
+		// 因为实际上并不在意 word 的顺序 而且根据题目要求 word 不定长 而且比 puzzle 大 因为 puzzle 是 7 为固定长度
+		// 所以固定 word 为 字符树
+
+		TrieTree root = new TrieTree();
+		// 加入字典树中相当于 压缩了 words
+		for (String word : words) {
+				// 排序去重加入 因为这样才能统计 currency 并进行压缩
+				root.add(getCharArray(word));
+		}
+		List<Integer> res = new ArrayList<>(puzzles.length);
+		for (int i = 0; i < puzzles.length; i++) {
+				res.add(0);
+		}
+
+		// 比较 puzzle 与 字典树
+		// puzzle 最大深度为 7
+		// 最后只需要加上 currency 即可
+		for (int i = 0; i < puzzles.length; i++) {
+				char[] puzzleArray = getCharArray(puzzles[i]);
+				char required = puzzles[i].charAt(0);
+				res.set(i, recursionSearch(root, puzzleArray, 0, required));
+		}
+		return res;
+}
+
+// puzzle 去匹配字典树 找到一个 节点 返回其 currency 即对应的 word 数量
+public int recursionSearch(TrieTree node, char[] puzzleArray, int pos, char required) {
+		if (node == null) {
+				return 0;
+		}
+		// puzzle 最深就打到这儿
+		if (pos == puzzleArray.length) {
+				return node.currency;
+		}
+
+		// 可以选择用当前 pos 这个位置来匹配 然后都 ++
+		int res = recursionSearch(node.child[puzzleArray[pos] - 'a'], puzzleArray, pos + 1, required);
+		// 因为去重了 所以 required 等于的时候 一定要匹配
+
+		// 不等于的时候，可以维持 node 引用 然后不匹配 跳过 puzzle 的这个字符 继续往下走
+		if (puzzleArray[pos] != required) {
+				// + 是因为 可以用多条路走 实际上就是要或者不要
+				res += recursionSearch(node, puzzleArray, pos + 1, required);
+		}
+		return res;
+}
+
+public char[] getCharArray(String word) {
+		char[] tmp = word.toCharArray();
+		Arrays.sort(tmp);
+		int newIndex = 0;
+		int l = 0, r = 0;
+		while (r < tmp.length) {
+				while (r < tmp.length && tmp[r] == tmp[l]) {
+						r++;
+				}
+				tmp[newIndex++] = tmp[l];
+				l = r;
+		}
+		char[] res = new char[newIndex];
+		System.arraycopy(tmp, 0, res, 0, newIndex);
+		return res;
 }
 ```
