@@ -12,6 +12,43 @@ thumbnail:
 
 记录下 leetcode 值得记录的例题
 
+## 单调栈
+
+### [下一个更大元素 II](https://leetcode-cn.com/problems/next-greater-element-ii/)
+
+<pre>
+示例
+输入: [1,2,1]
+输出: [2,-1,2]
+解释: 第一个 1 的下一个更大的数是 2；
+数字 2 找不到下一个更大的数； 
+第二个 1 的下一个最大的数需要循环搜索，结果也是 2。
+</pre>
+
+用单调栈来保存之前遍历过的路径，之后访问的数字如果比路径上的数字大的话，说明对于栈中保存的路径上的数字下一个更大的数是当前访问的数。
+
+```java
+public int[] nextGreaterElements(int[] nums) {
+		// 优化循环
+		int n = nums.length;
+		int[] res = new int[n];
+		// 添加的默认值
+		Arrays.fill(res, -1);
+		// 单调栈保存 nums 中的下标
+		Deque<Integer> stack = new LinkedList<>();
+		// 因为是循环数组 所以遍历到最后一个的时候 还要看其左侧的
+		// 所以相当于是两倍长度
+		for (int i = 0; i < 2 * n - 1; i++) {
+				// stack 里面放置的都是比 nums[i % n] 小的数 在其被弹出的时候 说明之后第一个比他大的数 就是访问的 nums[i % n]
+				while (!stack.isEmpty() && nums[i % n] > nums[stack.peek()]) {
+						res[stack.pop()] = nums[i % n];
+				}
+				stack.push(i % n);
+		}
+		return res;
+}
+```
+
 ## 滑动窗口
 
 ### [最小覆盖子串](https://leetcode-cn.com/problems/minimum-window-substring/)
