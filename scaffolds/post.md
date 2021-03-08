@@ -5,4 +5,5 @@ category:
 tags:
 toc:
 thumbnail:
+password:
 ---

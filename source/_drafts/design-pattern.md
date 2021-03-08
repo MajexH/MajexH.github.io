@@ -200,7 +200,6 @@ java i/o 类
 
 {% asset_img javaIO-example.png 报错 %}
 
-
 ```java
 // inputStream 的基类
 public abstract class InputStream implements Closeable {
@@ -278,4 +277,142 @@ public class FileInputStream extends InputStream {
     private native int read0() throws IOException;
 }
 
+```
+
+# 工厂模式
+
+抽象对象的新建过程
+
+## 简单工厂
+
+{% asset_img simple-factory.png 报错 %}
+
+简单工厂可以看做是对 new Object() 的简单抽象
+
+## 工厂方法
+
+{% asset_img abstract-method.png 报错 %}
+
+上面是一个简单的例子，子类将会实现 abstract 的抽象工厂方法，将创建细节在子类中实现，提供一个`抽象的工厂方法`。
+
+{% asset_img factory-method.png 报错 %}
+
+进一步，可以将其分为两类
+
+- Object （产品对应的接口）
+  - concreateObject(对应的具体产品实现类)
+- abstract creator(抽象的工厂方法)
+  - creatorImpl(实现对 concreateObject 的初始化)
+
+## 抽象工厂
+
+### 依赖倒置原则
+
+依赖抽象，不能依赖具体类。
+
+因此，抽象工厂针对产品，也是对产品的抽象进行维护和管理，不能对具体产品进行管理，所以需要抽象一下两个部分
+
+- 抽象工厂
+- 抽象产品（具体的产品依赖这个 base 的抽象产品）
+
+### 实现
+
+{% asset_img abstract-factory.png 报错 %}
+
+针对产品和工厂进行抽象 甚至可以嵌套抽象工厂 进一步抽象 product 的初始化流程。
+
+这样 client 只需要针对参数等情况 分发到不同的 factory 即可
+
+# 单例模式
+
+全局共享一个变量 
+
+java 的单例模式 
+
+1. 懒汉式
+
+由于 类加载 是线程安全的，所知直接放到 <clinit> 中初始化
+
+```java
+public class LazySingleton {
+  private static final Object singleton = new Object();
+  // 保证不被初始化
+  private LazySingleton(){}
+
+  public static Object getSingleton() {
+    return singleton;
+  }
+
+}
+```
+
+2. 饿汉式
+
+需要的时候再创建，为了保障多线程安全，创建的时候加锁
+
+```java
+public class HungrySingleton {
+  private static final Object singleton;
+  // 保证不被初始化
+  private HungrySingleton(){}
+
+  public static Object getSingleton() {
+    synchronized (HungrySingleton.class) {
+        if (singleton == null) {
+            singleton = new NeedSingletonClass();
+        }
+        return singleton;
+    }
+  }
+}
+```
+
+3. 双重校验锁
+
+双重校验锁，初始化的时候使用 synchronized 保障线程安全，同时使用 volatile 保障指令不被重排序。
+
+```java
+
+public class DoubleCheckSingleton {
+
+  // 防止指令重排序 因为 Object 对象生成有多个步骤，为了保障
+  // 其他线程能够使用该完整对象
+  private static volatile Object singleton;
+
+  public static Object getSingleton() {
+    // 防止多个线程堵塞 提高多线程性能
+    if (singleton == null) {
+      synchronized(DoubleCheckSingleton.class) {
+        // 在多个线程堵塞在时，防止 singleton 被重复初始化
+        if (singleton == null) {
+          singleton = new Object();
+        }
+      }
+    }
+    return singleton;
+  }
+}
+
+```
+
+4. 静态内部类
+
+```java
+// 使用静态内部类来保障安全
+// 原理是因为 静态内部类是懒加载的
+public class StaticClassSingleton {
+
+    private StaticClassSingleton() {};
+
+    private static class InnerStaticClass {
+        public static NeedSingletonClass singletonClass = new NeedSingletonClass();
+    }
+
+    // 这儿是懒加载，在 innerStaticClass 里面的静态内部类被加载的时候
+    // 执行内部类的 <clinit> 方法进行初始化
+    // final 是为了保证这个方法不会被重写或者重载
+    public static final NeedSingletonClass getInstance() {
+        return InnerStaticClass.singletonClass;
+    }
+}
 ```
