@@ -12,6 +12,179 @@ thumbnail:
 
 记录下 leetcode 值得记录的例题
 
+<!-- more -->
+
+## kmp 算法
+
+kmp 算法的原始实现方法在另一篇里面已经写过，实际上就是通过记录模式串的相同的前后缀长度来跳过模式串重新匹配的距离。
+
+```java
+public int[] getNext(String pattern) {
+	  int[] next = new int[pattern.length()];
+		next[0] = -1;
+		// 模式串相差一进行匹配
+		int k = -1, j = 0;
+		while (j < pattern.length() - 1) {
+			  // 匹配相同的字符
+				if (k == -1 || pattern.charAt(k) == pattern.charAt(j)) {
+					  k++;
+						j++;
+						next[j] = k;
+				} else {
+						k = next[k];
+				}
+		}
+		return next;
+}
+
+
+public int match(String s, String pattern) {
+   int[] next = getNext(pattern);
+
+   int i = 0, j = 0;
+   while (i < s.length() && j < pattern.length()) {
+      if (s.charAt(i) == pattern.charAt(j)) {
+          i++;
+          j++;
+      } else {
+          // 失配 重新定位
+          j = next[j];
+      }
+   }
+
+   if (j == pattern.length()) {
+     return i - j;
+   } else {
+     return -1;// 没有找到
+   }
+}
+```
+
+### [最短回文串](https://leetcode-cn.com/problems/shortest-palindrome/)
+
+给定一个字符串，问在字符串**左边**添加一些字母后，形成一个回文串，问形成的回文串中，最短的回文串什么。
+
+- 超时解法
+
+最开始的暴力思维，想得就是遍历这个字符串，找到中间可以作为分隔线的地方（因为回文串其实可以看成在一个分隔点的左右镜像），然后遍历所有的分割线，比较生成的最短回文串。
+
+```java
+class Solution {
+    // 只能在字符串前面添加
+    public String shortestPalindrome(String s) {
+        if (s.equals("")) return "";
+        String min = null;
+        // 作为 palindrome 的中心点 进行遍历
+        for (int i = 0; i <= s.length() / 2; i++) {
+            String odd = odd(i, s);
+            String even = even(i, s);
+            String tmp = "";
+            if (odd.equals("") && even.equals("")) {
+                continue;
+            }
+            if (odd.equals("")) tmp = even;
+            if (even.equals("")) tmp = odd;
+            if (!odd.equals("") && !even.equals("")) {
+                tmp = even.length() > odd.length() ? odd: even;
+            }
+
+            if (min == null) min = tmp;
+            else if (min.length() > tmp.length()) {
+                min = tmp;
+            }
+        }
+        return min;
+    }
+
+    private String odd(int i, String s) {
+        int left = i - 1, right = i + 1;
+        // 考虑最后的 palindrome 是奇数长度情况
+        boolean canPalindrome = true;
+        while (left >= 0 && right < s.length()) {
+            if (s.charAt(left) != s.charAt(right)) {
+                // 不能形成
+                canPalindrome = false;
+                break;
+            }
+            left--;
+            right++;
+        }
+        String tmp = "";
+        if (!canPalindrome) return tmp;
+
+        // 左边为 -1 说明右边长要把右边的加载左边
+        if (left == -1) {
+            StringBuilder builder = new StringBuilder(s.substring(right));
+
+            tmp = builder.reverse().toString() + s;
+        }
+        return tmp;
+    }
+
+    private String even(int i, String s) {
+        int left = i - 1, right = i;
+        // 考虑最后的 palindrome 是奇数长度情况
+        boolean canPalindrome = true;
+        while (left >= 0 && right < s.length()) {
+            if (s.charAt(left) != s.charAt(right)) {
+                // 不能形成
+                canPalindrome = false;
+                break;
+            }
+            left--;
+            right++;
+        }
+        String tmp = "";
+        if (!canPalindrome) return tmp;
+
+        // 左边为 -1 说明右边长要把右边的加载左边
+        if (left == -1) {
+            StringBuilder builder = new StringBuilder(s.substring(right));
+
+            tmp = builder.reverse().toString() + s;
+        }
+        return tmp;
+    }
+}
+```
+
+- 前后缀思维
+
+其实考虑一个最长的回文串的，肯定是把输入串的逆向输入串拼接到原始字符串的左边。
+
+那么，如果这个逆向的字符串有一部分跟输入串的前一部分是重合的就可以缩短整个长度。
+
+比如
+
+- <span style="color: red">a</span>baaa 与其逆 aaab<span style="color: red">a</span> 在红色的地方重合
+	- 即 abaaa 的前缀 a 与 aaaba 的后缀 a 重合
+
+所以 只需要遍历得到这个相同的前后缀即可。
+
+下述算法，由于需要判断 equals 因此其执行效率趋近 o(n^2)
+
+```java
+public String shortestPalindrome(String s) {
+	  String reverse = new StringBuilder(s).reverse().toString();
+
+		// 因为从后向前 可以直接返回 找到的第一个 一定是最长的相同前后缀
+		for (int i = s.length(); i >= 0; i--) {
+			  // 前缀等于后缀
+				if (s.subString(0, i).equals(reverse.subString(s.length() - i))) {
+					// 这个时候只需要加上 reverse 去除后缀的部分
+					return reverse.subString(0, s.length() - i) + s;
+				}
+		}
+		return "";
+}
+```
+
+- kmp 思维 
+
+上面采用前后缀的方式其实已经接近了 kmp 的思维方式，不过是比较朴素的解法，因为这个时候还可以进一步得到，实际上就是求原串的最长回文前缀，因为这样逆串，反转过来后，与其回文前缀相等，可以直接消去。
+
+那么可以直接拼接成一个最长的
+
 ## 单调栈
 
 ### [下一个更大元素 II](https://leetcode-cn.com/problems/next-greater-element-ii/)

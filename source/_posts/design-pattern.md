@@ -1,11 +1,18 @@
 ---
 title: design-pattern
 category:
- - code
+  - code
 tags:
- - 设计模式
+  - 设计模式
 toc: true
+date: 2021-03-09 21:42:47
+thumbnail:
+password:
 ---
+
+常见的设计模式的简单总结和简单实现，为以后做个参考
+
+<!-- more -->
 
 # 观察者模式
 
@@ -415,4 +422,97 @@ public class StaticClassSingleton {
         return InnerStaticClass.singletonClass;
     }
 }
+```
+
+# 命令模式
+
+命令模式是为了封装不同的操作的不同 api 做的
+
+如`线程池等的实现、工作队列`等也是跟命令模式相关
+
+{% asset_img command.png 报错 %}
+
+```java
+public class Client {
+
+    private CommandManager manager;
+
+    public Client(CommandManager manager) {
+        this.manager = manager;
+    }
+
+    public void execute(int id, Object args) {
+        this.manager.execute(id, args);
+    }
+}
+
+// 对不同 API 的调用封装成同一个 API
+public interface Command {
+    // 封装命令的细节
+    void execute(Object args);
+}
+
+public class CommandExecutor {
+
+    void up() {
+        System.out.println("executor up !");
+    }
+}
+
+// 管理并初始化所有的 command 对象
+public class CommandManager {
+
+    private Command[] commands;
+
+    public CommandManager() {
+        this.commands = new Command[1];
+        this.commands[0] = new CommandImpl(new CommandExecutor());
+    }
+
+    // 根据传入的 command id 与 args 具体执行
+    public void execute(int commandID, Object args) {
+        this.commands[commandID].execute(args);
+    }
+}
+
+```
+
+# 适配器模式
+
+为了适配两种不同的方法的对象，让一种能够适应另一种添加的类
+
+- 接口适配：实现对应的接口，通过组合的方式实现适配。
+- 类适配：通过组合继承（java 不可能）
+
+{% asset_img adapter.png 报错 %}
+
+```java
+
+// 客户端调用的接口
+public interface Duck {
+
+    void spark();
+}
+
+public class Dog {
+
+    public void bark() {
+        System.out.println("!!!!!!!!");
+    }
+}
+
+public class DuckAdapter implements Duck {
+
+    private Dog dog;
+
+    public DuckAdapter(Dog dog) {
+        this.dog = dog;
+    }
+
+    @Override
+    public void spark() {
+        this.dog.bark();
+    }
+}
+
 ```

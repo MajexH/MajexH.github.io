@@ -12,6 +12,9 @@ thumbnail:
 
 一直以来，对于java的多线程变成都不是十分了解，趁着项目需要一个多线程的爬虫学习了一下，主要是一些基础的相关知识，以上。
 
+
+<!-- more -->
+
 ## Runnable和Thread
 
 踩的第一个坑是关于实现Runnable接口和继承Thread类来build一个新的可运行线程。

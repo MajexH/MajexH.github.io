@@ -14,6 +14,8 @@ date: 2019-01-26 15:12:05
 - hexo命令 & 主题
 - hexo自动部署
 
+<!-- more -->
+
 ## hexo简介
 
 我们首先来看看[hexo官网](https://hexo.io/zh-cn/index.html)对hexo的介绍

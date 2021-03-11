@@ -6,3 +6,5 @@ toc:
 thumbnail:
 password:
 ---
+
+<!-- more -->

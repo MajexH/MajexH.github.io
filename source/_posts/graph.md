@@ -5,11 +5,31 @@ category:
 tags:
   - 图算法
 toc: true
+date: 2021-03-07 16:31:21
+thumbnail:
+password:
 ---
 
 # 图算法
 
-最简单的 DFS、BFS 一笔带过了，下面先给出几种图的定义，图均使用邻接表表示
+简单实现了无向图、无向加权图、有向图、有向加权图的几种算法，包括:
+
+- 遍历
+  - dfs
+  - bfs
+- 应用
+  - 环图
+  - 拓扑排序
+  - 双色问题
+  - 最小生成树
+    - prim 
+    - krusal
+  - 最短路径
+    - Dijkstra
+    - 拓扑排序遍历
+    - bellemanFord
+
+<!-- more -->
 
 ## 图的数据结构
 

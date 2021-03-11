@@ -9,9 +9,18 @@ toc: true
 date: 2021-02-24 22:21:07
 thumbnail:
 ---
-
-
 # 排序算法
+
+简单实现了一下几种常见的内排序算法
+
+- 希尔排序
+- 归并排序
+- 快速排序
+- 堆排序
+- 基数排序
+- 桶排序
+
+<!-- more -->
 
 ## 希尔排序
 
@@ -435,5 +444,3 @@ func maximumGapWithBucket(nums []int) int {
 	return res
 }
 ```
-
-## golang 库函数实现排序 | java 库函数实现排序

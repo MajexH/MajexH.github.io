@@ -130,16 +130,16 @@ article:
      # Whether to show estimated article reading time
     readtime: true
     # Article licensing block
-    licenses:
-        Creative Commons:
-            icon: fab fa-creative-commons
-            url: 'https://creativecommons.org/'
-        Attribution:
-            icon: fab fa-creative-commons-by
-            url: 'https://creativecommons.org/licenses/by/4.0/'
-        Noncommercial:
-            icon: fab fa-creative-commons-nc
-            url: 'https://creativecommons.org/licenses/by-nc/4.0/'
+    # licenses:
+    #     Creative Commons:
+    #         icon: fab fa-creative-commons
+    #         url: 'https://creativecommons.org/'
+    #     Attribution:
+    #         icon: fab fa-creative-commons-by
+    #         url: 'https://creativecommons.org/licenses/by/4.0/'
+    #     Noncommercial:
+    #         icon: fab fa-creative-commons-nc
+    #         url: 'https://creativecommons.org/licenses/by-nc/4.0/'
 # Search plugin configurations
 # https://ppoffice.github.io/hexo-theme-icarus/categories/Plugins/Search/
 search:
@@ -147,9 +147,21 @@ search:
 # Comment plugin configurations
 # https://ppoffice.github.io/hexo-theme-icarus/categories/Plugins/Comment/
 comment:
-    type: disqus
-    # Disqus shortname
-    shortname: ''
+    type: gitalk
+    client_id: 229758a40bcba2667c41
+    client_secret: 543e850c3a7187040f8eebc05bd232f0f0a3e767
+    repo: blog-comment
+    owner: MajexH
+    admin:
+        - MajexH
+    per_page: 20                    # 可选填
+    distraction_free_mode: false    # 可选填
+    pager_direction: last           # 可选填
+    create_issue_manually: false    # 可选填
+    #proxy:                          # 可选填
+    flip_move_options:              # 可选填
+    enable_hotkey: true             # 可选填
+    language: zh-CN                 # 可选填
 # donates:
 #     # "Afdian.net" donate button configurations
 #     -
@@ -223,18 +235,18 @@ widgets:
             Github:
                 icon: fab fa-github
                 url: 'http://github.com/MajexH'
-            Facebook:
-                icon: fab fa-facebook
-                url: 'https://facebook.com'
-            Twitter:
-                icon: fab fa-twitter
-                url: 'https://twitter.com'
-            Dribbble:
-                icon: fab fa-dribbble
-                url: 'https://dribbble.com'
-            RSS:
-                icon: fas fa-rss
-                url: /
+            # Facebook:
+            #     icon: fab fa-facebook
+            #     url: 'https://facebook.com'
+            # Twitter:
+            #     icon: fab fa-twitter
+            #     url: 'https://twitter.com'
+            # Dribbble:
+            #     icon: fab fa-dribbble
+            #     url: 'https://dribbble.com'
+            # RSS:
+            #     icon: fas fa-rss
+            #     url: /
     # Categories widget configurations
     -
         # Where should the widget be placed, left sidebar or right sidebar
@@ -242,11 +254,11 @@ widgets:
         type: categories
     -
         # Where should the widget be placed, left sidebar or right sidebar
-        position: left
+        position: right
         type: recent_posts
     -
         type: archives
-        position: left
+        position: right
     -
         type: tags
         position: left

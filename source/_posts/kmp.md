@@ -4,12 +4,11 @@ category:
   - algorithm
 tags:
   - kmp
-  - 字符串
+  - string
 toc: true
 date: 2021-03-07 20:51:36
 thumbnail:
 ---
-
 
 算法书上使用的是 有限状态机 来描述的 kmp 算法。
 
@@ -18,6 +17,8 @@ thumbnail:
 现在记录一下。
 
 参考：[阮一峰 blog](http://www.ruanyifeng.com/blog/2013/05/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm.html)
+
+<!-- more -->
 
 ## 前后缀匹配
 
@@ -78,9 +79,10 @@ public int[] getNext(String str) {
   int n = str.length();
 
   int[] next = new int[n];
+  next[0] = -1;
   // 让模式串错位一个开始 kmp 的匹配过程
   int k = -1, j = 0;
-  while (j < n)) {
+  while (j < n - 1) {
     if (k == -1 || str.charAt(k) == str.charAt(j)) {
       k++;
       j++;
