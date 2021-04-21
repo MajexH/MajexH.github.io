@@ -157,7 +157,7 @@ class Solution {
 比如
 
 - <span style="color: red">a</span>baaa 与其逆 aaab<span style="color: red">a</span> 在红色的地方重合
-	- 即 abaaa 的前缀 a 与 aaaba 的后缀 a 重合
+  - 即 abaaa 的前缀 a 与 aaaba 的后缀 a 重合
 
 所以 只需要遍历得到这个相同的前后缀即可。
 
@@ -179,13 +179,130 @@ public String shortestPalindrome(String s) {
 }
 ```
 
-- kmp 思维 
+- kmp 思维
 
-上面采用前后缀的方式其实已经接近了 kmp 的思维方式，不过是比较朴素的解法，因为这个时候还可以进一步得到，实际上就是求原串的最长回文前缀，因为这样逆串，反转过来后，与其回文前缀相等，可以直接消去。
+上面采用前后缀的方式其实已经接近了 kmp 的思维方式，不过是比较朴素的解法，因为这个时候还可以进一步得到，实际上就是求原串的最长回文前缀，因为这样逆串，反转过来后，与其回文前缀相等的部分，可以直接消去。
 
-那么可以直接拼接成一个最长的
+那么可以直接拼接成一个最长的字符串，即 `s + "#" + reverse` 那么只需要找到这个字符串`结尾的部分相等的前后缀长度`，即可以在返回结果的时候删除重复的部分。所以可用 kmp 的 next 数组求法找到最长的前后缀，既可以将时间复杂度进一步降低。
+
+```java
+public class ShortestPalindromeNew_214 {
+
+    // keep 春招就考的这个
+    public String shortestPalindrome(String s) {
+        String reverse = new StringBuilder(s).reverse().toString();
+
+        String addedStr = s + "#" + reverse;
+
+        int len = getMaxMatchLen(addedStr);
+
+        return reverse.substring(0, reverse.length() - len) + s;
+    }
+
+
+    // 找到从末尾开始的前后缀的最长匹配长度
+    public int getMaxMatchLen(String s) {
+        int[] next = new int[s.length() + 1];
+        next[0] = -1;
+        int k = -1, j = 0;
+        while (j < s.length()) {
+            if (k == -1 || s.charAt(k) == s.charAt(j)) {
+                k++;
+                j++;
+                next[j] = k;
+            } else {
+                k = next[k];
+            }
+        }
+        return next[s.length()];
+    }
+}
+```
 
 ## 单调栈
+
+### [找出最具竞争力的子序列](https://leetcode-cn.com/problems/find-the-most-competitive-subsequence/)
+
+找到其中的一个子序列，满足其字符串比较是最小的结果。
+
+- brute-force 
+
+其实查看题意的话，最主要的就是不停的找到最小的数字
+- 如果最小的数字 右侧的数字数量大于等于剩下要找的数量，说明继续向右侧寻找最小数
+- 如果小于要找的数量，说明现在最小的数及其右侧所有的数字已经组成答案的一部分，因为这个最小数字形成的这个子序列一定是当前这个最小的
+- 重复寻找上述过程，直到所有的数字被填充
+
+因此上述过程是一个递归的过程（递归超时，实际上如果能够保存 i -> j 的最小值的位置的话，就不用在递归中每次寻找了，应该能节约很多时间）
+
+```java
+// 同一个位置上的数字更小的 int[] 更具竞争力
+// 问长度为 k 的 int[] 的最有竞争力的结果是什么
+// 找到最小的 看后面的数 是否满足剩下的大小 不然就往前找 找到剩下的最小的
+public int[] mostCompetitiveBruteForce(int[] nums, int k) {
+		if (k > nums.length) return new int[k];
+		if (k == nums.length) return nums;
+
+		int[] res = new int[k];
+
+		recursion(nums, res, 0, nums.length - 1, 0, res.length - 1);
+		return res;
+}
+
+// 直接使用递归 每次找到 i->j 的最小值 然后判断去什么其他地方填充即可
+public void recursion(int[] nums, int[] res, int i, int j, int n, int m) {
+		if (n > m) return;
+		int min = i;
+		for (int k = i; k <= j; k++) {
+				if (nums[k] < nums[min]) min = k;
+		}
+		// 剩下的数字不足以填满 m
+		if (j - min + 1 <= m - n + 1) {
+				for (int k = j; k >= min; k--) {
+						res[m--] = nums[k];
+				}
+				recursion(nums, res, i, min - 1, n, m);
+				return;
+		}
+		// 还足够填满 从剩下的里面取较小的数字 然后填满
+		res[n++] = nums[min];
+		recursion(nums, res, min + 1, j, n, m);
+}
+```
+
+- 单调栈
+
+实际上题目寻找的是最小的数字形成的结果，那么可以用一个单调栈来保存前面的访问的数组，如果当前访问的数字比之前的数字小的话，说明应该从这个数字之后开始寻找，其结果也就是把之前的数组弹出栈
+
+```java
+public int[] mostCompetitive(int[] nums, int k) {
+	if (k > nums.length) return new int[k];
+	if (k == nums.length) return nums;
+
+	int[] res = new int[k];
+	// 单调栈
+	Deque<Integer> stack = new LinkedList<>();
+
+	for (int i = 0; i < nums.length; i++) {
+			int num = nums[i];
+			// 如果当前数字比 stack 里面的要小 说明概要弹出
+			// 或者num 后剩下的长度不够了就不能弹出了
+			while (!stack.isEmpty() && stack.peekLast() > num && k - stack.size() < nums.length - i) {
+					stack.removeLast();
+			}
+
+			if (stack.size() < k) {
+					stack.addLast(num);
+			}
+	}
+
+	k--;
+	while (k >= 0) {
+			res[k] = stack.removeLast();
+			k--;
+	}
+	return res;
+}
+```
 
 ### [下一个更大元素 II](https://leetcode-cn.com/problems/next-greater-element-ii/)
 
@@ -219,6 +336,88 @@ public int[] nextGreaterElements(int[] nums) {
 				stack.push(i % n);
 		}
 		return res;
+}
+```
+
+### [移调 k 位数字](https://leetcode-cn.com/problems/remove-k-digits/)
+
+> 问如果在原始字符串中，移掉 k 位数字，最后形成的最小字符串是什么
+
+1. 如果 k 大于等于原来字符串的长度，那么就相当于删除了所有的数字，直接返回 "0" 即可
+2. 考虑 k 小于的情况
+	- 既然要删除数字，先考虑删除一个数字的情况，如 45 中删除一个数字，那么结果就是**删除5 保留4**，考虑 54 也是**删除5 保留4**
+	- 那既然如此，也就是说，从字符串中删除一个数字的话相当于`删除的数字之前的一个数替代当前这位数`，那么要使结果更小，`替代的这个数一定要小于之前的删除的那个数`，即 Dk < D(k-1) 删除 Dk
+	
+- 每次遍历删除一个数字
+
+```java
+public String removeKdigitsDeleteOne(String num, int k) {
+		// 移除所有的数字
+		if (k >= num.length()) return "0";
+		while (k > 0) {
+				num = deleteOne(num);
+				k--;
+		}
+		// 去除前导 0
+		StringBuilder builder = new StringBuilder();
+		int i = 0;
+		while (i < num.length()) {
+				if (num.charAt(i) != '0') break;
+				i++;
+		}
+		while (i < num.length()) {
+				builder.append(num.charAt(i++));
+		}
+		return builder.length() == 0 ? "0" : builder.toString();
+}
+
+private String deleteOne(String num) {
+		for (int i = 1; i < num.length(); i++) {
+				// 现在可以删除 i - 1 这个位置的数了
+				if (num.charAt(i) < num.charAt(i - 1)) return num.substring(0, i - 1) + num.substring(i);
+		}
+		// 删除最后一个数字
+		return num.substring(0, num.length() - 1);
+}
+```
+
+- 单调栈
+
+每次去删除的一个数字的时间效率太低，因此可以考虑用一个单调栈来保存`小于当前数的数字`，当遍历到的下标大于单调栈的尾时，说明前面的数字该删除了
+
+```java
+public String removeKdigits(String num, int k) {
+		// 移除所有的数字
+		if (k >= num.length()) return "0";
+		// 删除数字的话 一定要删除的是 前面一个数字 大于 后面一个数字的地方
+		// 因为这样才能在删除后保证剩下的形成更小的结果
+		Deque<Character> queue = new LinkedList<>();
+		for (char c : num.toCharArray()) {
+				// 单调栈中保存之前的结果
+				while (!queue.isEmpty() && queue.peekLast() > c && k > 0) {
+						queue.removeLast();
+						k--;
+				}
+				queue.add(c);
+		}
+
+		// 剩下的 一定是一个从小到大的序列
+		while (k > 0) {
+				k--;
+				queue.removeLast();
+		}
+
+		StringBuilder builder = new StringBuilder();
+
+		while (!queue.isEmpty()) {
+				if (queue.peekFirst() == '0') queue.removeFirst();
+				else break;
+		}
+
+		while (!queue.isEmpty()) {
+				builder.append(queue.removeFirst());
+		}
+		return builder.length() == 0 ? "0" : builder.toString();
 }
 ```
 
@@ -367,6 +566,53 @@ func atMostK(A []int, K int) int {
 	}
 
 	return res
+}
+```
+
+```java
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+public class SubarraysWithKDistinct_992 {
+
+    // 如果 A 里面
+    public int subarraysWithKDistinct(int[] A, int K) {
+        return subArraysDistinctAtMostK(A, K) - subArraysDistinctAtMostK(A, K - 1);
+    }
+
+    // 计算最多的有多少个的话 可以固定左边界 然后计算
+    private int subArraysDistinctAtMostK(int[] array, int k) {
+        Map<Integer, Integer> window = new HashMap<>();
+
+        int res = 0;
+
+        int left = 0, right = 0;
+
+        while (right < array.length) {
+            // 固定左边界 移动右边界
+            window.put(array[right], window.getOrDefault(array[right], 0) + 1);
+            // 这边已经需要减除了
+            while (left <= right && window.size() > k) {
+                window.put(array[left], window.get(array[left]) - 1);
+                if (window.get(array[left]) == 0) window.remove(array[left]);
+                left++;
+            }
+            // 这个地方是因为右边界到左边之间的数字 一定是小于等于 K 个不同的数字的
+            // 那么能够以左边界形成的 一定是中的一个子数组 如
+            // 以 [1,2,1,2,3] 为例，左边界固定的时候，恰好存在 2 个不同整数的子区间为 [1,2],[1,2,1],[1,2,1,2]，总数为 3。其值为下标 3 - 1 + 1，即区间 [1..3] 的长度。
+            res += right - left;
+            right++;
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new SubarraysWithKDistinct_992().subarraysWithKDistinct(new int[]{1,2,1,2,3}, 2));
+        System.out.println(new SubarraysWithKDistinct_992().subarraysWithKDistinct(new int[]{1,2,1,3,4}, 3));
+    }
 }
 ```
 
@@ -589,7 +835,56 @@ public int maxSatisfied(int[] customers, int[] grumpy, int X) {
 
 ## 二进制题目
 
-### 模拟除法(https://leetcode-cn.com/problems/divide-two-integers/)
+### [连接连续二进制数字](https://leetcode-cn.com/problems/concatenation-of-consecutive-binary-numbers/)
+
+题目要求的是将 1 -> n 的二进制的字符拼接起来表示一个超大的二进制数，然后将 二进制 数转换成为 十进制 数，并模上 1000000007。
+
+如果直接把每个数字转换成为二进制数，然后拼接转换，因为会超时，因为 n 的返回达到了 10^5。
+
+所以考虑在遍历的时候直接对每一位数进行处理。
+
+观察事例，可以看到其实相当于 1(1) << 4 位数 10(2) << 2 11(3) 不变，所以只需要在每个数字遍历的时候，`将上一个数字形成的结果左移当前数字对应的二进制的位数的长度，加上该数即可`
+
+<pre>
+n = 3, res = 27
+二进制表示为 1 -> <span style="color: red">1</span>, 2 -> <span style="color: blue">10</span>, 3 -> <span style="color: green">11</span>
+27 二进制表示为 <span style="color: red">1</span><span style="color: blue">10</span><span style="color: green">11</span>
+</pre>
+
+计算二进制数的长度的时候，可以简单的采用遍历的方式进行。
+
+- [1] 一位数长度
+- [2,3] 二位数长度
+- [4,……,7] 三位数长度
+- [8,……,15] 四位数长度
+
+也就是说，长度也是一个可以从上一个长度推断来的，每次需要新增长度的时候，都是形成 2 的幂 的形成，可以用 i & (i - 1) 来快速的判断 2 的幂。
+
+```java
+private static int mod = 1000000007;
+
+// 只需要知道遍历的 n 的位数的长度即可
+public int concatenatedBinary(int n) {
+		long res = 0;
+		int shift = 0;
+		// 因为要返回的是 1 - n 的数字的二进制的组合形成的大数字的十进制数
+		// 比如 1 2 3 组成的 1 10 11 返回 27
+		// 相当于 首先访问 1 结果为 1
+		// 访问 2 然后 1 左移两位 再加上 2
+		// 访问 3 上一步的结果 再左移两位 加上 3
+		// 所以对于每一个数字来说 实际上只需要让上一次的结果 不停的左移它的二进制的位数长度即可
+		for (int i = 1; i <= n; i++) {
+				// 因为二的幂次方为 1000 的形式
+				// 所以一旦知道现在的 i 为 2 的幂次方 就需要 shift++
+				if ((i & (i - 1)) == 0) {
+						shift++;
+				}
+				res = ((res << shift) + i) % mod;
+		}
+		return (int) res;
+}
+```
+### [模拟除法](https://leetcode-cn.com/problems/divide-two-integers/)
 
 不能使用**乘法、除法和 mod 运算符**。
 
@@ -1309,6 +1604,81 @@ func canJump(nums []int) bool {
 ```
 
 ## 递归
+
+### [执行乘法运算的最大分数](https://leetcode-cn.com/problems/maximum-score-from-performing-multiplication-operations/)
+
+> 给你两个长度分别 n 和 m 的整数数组 nums 和 multipliers ，其中 n >= m ，数组下标 从 1 开始 计数。
+> 初始时，你的分数为 0 。你需要执行恰好 m 步操作。在第 i 步操作（从 1 开始 计数）中，需要：
+>选择数组 nums 开头处或者末尾处 的整数 x 。
+你获得 multipliers[i] * x 分，并累加到你的分数中。
+将 x 从数组 nums 中移除。
+在执行 m 步操作后，返回 最大 分数。
+
+- 暴力解法
+
+暴力解法就是直接根据每次取的不同字符生成一颗二叉树，然后在二叉树上进行遍历得到结果
+
+```java
+class Solution {
+    public int maximumScore(int[] nums, int[] multipliers) {
+        Deque<Integer> num = new LinkedList<>();
+        for (int t : nums) {
+            num.addLast(t);
+        }
+        return recursion(0, multipliers, num);
+    }
+
+    public int recursion(int index, int[] multipliers, Deque<Integer> nums) {
+        if (index >= multipliers.length) return 0;
+        Deque<Integer> tmp = new LinkedList<>(nums);
+        return Math.max(multipliers[index] * nums.removeFirst() + recursion(index + 1, multipliers, nums),
+                multipliers[index] * tmp.removeLast() + recursion(index + 1, multipliers, tmp));
+    }
+}
+```
+
+- 带 memo
+
+观察上述的结果的话，可以首先进行的优化是去除 dequeue 的使用，直接使用一个范围框定 nums 的选取
+
+```java
+public int maximumScore(int[] nums, int[] multipliers) {
+		return recursion(0, multipliers, nums, 0, nums.length - 1);
+}
+
+public int recursion(int index, int[] multipliers, int[] nums, int left, int right) {
+		if (index >= multipliers.length) return 0;
+		int l = nums[left] * multipliers[index] + recursion(index + 1, multipliers, nums, left + 1, right, memo);
+		int r = nums[right] * multipliers[index] + recursion(index + 1, multipliers, nums, left, right - 1, memo);
+		return Math.max(l, r);
+}
+```
+
+但是上述的方法仍然超时，因为遍历这颗形成的二叉树的时候，会有重复的访问情况，可以观察到的是 `left + n - 1 - right == index`，因为从左边选取的数字数量和右边选取的数字的数量，肯定是 multipliers 选取的数量。
+
+```java
+public int maximumScore(int[] nums, int[] multipliers) {
+		// 上面的 left、right、index 其实可以用任意两个来表示即可
+		// 因为可以根据公式互换，所以这样选择的 memo 是最小的
+		int[][] memo = new int[multipliers.length][multipliers.length];
+		for (int i = 0; i < multipliers.length; i++) {
+				Arrays.fill(memo[i], Integer.MAX_VALUE);
+		}
+		return recursion(0, multipliers, nums, 0, nums.length - 1, memo);
+}
+
+// 因为 left + n - 1 - right == index
+// 因为其结果代表的是 左边选取 left 个 右边选取 n - 1 - right 个
+// 而取出的结果
+public int recursion(int index, int[] multipliers, int[] nums, int left, int right, int[][] memo) {
+		if (index >= multipliers.length) return 0;
+		if (memo[left][index] != Integer.MAX_VALUE) return memo[left][index];
+		int l = nums[left] * multipliers[index] + recursion(index + 1, multipliers, nums, left + 1, right, memo);
+		int r = nums[right] * multipliers[index] + recursion(index + 1, multipliers, nums, left, right - 1, memo);
+		memo[left][index] = Math.max(l, r);
+		return memo[left][index];
+}
+```
 
 ### [括号生成](https://leetcode-cn.com/problems/generate-parentheses/)
 
@@ -2040,6 +2410,97 @@ func (u *unionFind) GetCount() int {
 }
 ```
 
+#### [执行交换操作后的最小汉明距离](https://leetcode-cn.com/problems/minimize-hamming-distance-after-swap-operations/)
+
+这道题实际上是找连通分量，对比两个数组中相应的连通区域不等的部分，所以可以用`无向图连通分量 dfs` or `并查集` 得到连通分量后进行处理。
+
+```java
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+public class MinimumHammingDistance_1722 {
+
+    public void union(int[] union, int i, int j) {
+        int x = getParent(union, i);
+        int y = getParent(union, j);
+        if (x != y) {
+            union[y] = x;
+        }
+    }
+
+    public int getParent(int[] union, int i) {
+        if (union[i] == -1) return i;
+        return getParent(union, union[i]);
+    }
+
+    public void changeUnion(int[] union) {
+        boolean[] memo = new boolean[union.length];
+
+        for (int i = 0; i < union.length; i++) {
+            if (!memo[i]) {
+                recursion(union, memo, i);
+            }
+        }
+    }
+
+    // 更该 union 到root
+    public int recursion(int[] union, boolean[] memo, int i) {
+        if (memo[i]) return union[i];
+        memo[i] = true;
+        if (union[i] == -1 || union[i] == i) {
+            union[i] = i;
+            return i;
+        }
+        int root = recursion(union, memo, union[i]);
+        union[i] = root;
+        return root;
+    }
+
+    // 连通图问题 在连通分量里面找到不等的数字
+    // 无向图的连通分量
+    // 可以使用 dfs 得到无向图的连通分量 or 使用 union 的算法得到连通分量
+    // 但是 union 算法如果直接在算法执行图中去更改所有的 root 值 会慢一点儿 所以在执行完毕后去更改
+    public int minimumHammingDistance(int[] source, int[] target, int[][] allowedSwaps) {
+        int[] union = new int[source.length];
+        Arrays.fill(union, -1);
+
+        for (int[] allowSwap : allowedSwaps) {
+            union(union, allowSwap[0], allowSwap[1]);
+        }
+
+        // 修改连通分量标识 到根节点
+        changeUnion(union);
+        // 现在每个中对应的都是一个连通分量的根节点的下标，那么就需要知道 一个连通分量里面有多少个不等的
+
+        // 保存root中的数字每个出现了几次
+        Map<Integer, Map<Integer, Integer>> sMap = new HashMap<>();
+        for (int i = 0; i < union.length; i++) {
+            int root = union[i];
+            if (!sMap.containsKey(root)) sMap.put(root, new HashMap<>());
+            Map<Integer, Integer> tmp = sMap.get(root);
+            tmp.put(source[i], tmp.getOrDefault(source[i], 0) + 1);
+        }
+
+        int res = 0;
+        for (int i = 0; i < union.length; i++) {
+            int root = union[i];
+            Map<Integer, Integer> tmp = sMap.get(root);
+            if (!tmp.containsKey(target[i]) || tmp.get(target[i]) == 0) {
+                res++;
+            } else {
+                tmp.put(target[i], tmp.get(target[i]) - 1);
+            }
+        }
+        return res;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new MinimumHammingDistance_1722().minimumHammingDistance(new int[]{49, 21, 79, 79, 6, 67, 78, 9, 91, 39, 49, 32, 53, 29, 97, 50, 82, 55, 13, 83, 63, 99, 41, 6, 51, 46, 31, 26, 58, 18, 32, 51, 44, 66, 40, 35, 96, 20, 35, 43, 64, 96, 99, 76, 11, 35, 86, 96, 10, 19, 70, 29, 19, 47}, new int[]{33, 22, 32, 71, 66, 90, 78, 67, 74, 76, 84, 32, 25, 100, 57, 7, 90, 95, 33, 79, 54, 99, 42, 6, 32, 55, 31, 14, 58, 67, 48, 59, 7, 50, 5, 22, 11, 97, 94, 14, 53, 75, 3, 9, 82, 74, 86, 27, 21, 77, 70, 29, 65, 15}, new int[][]{{40, 41}, {41, 35}, {18, 19}, {9, 51}, {48, 2}, {45, 13}, {27, 45}, {16, 22}, {23, 25}, {2, 6}, {5, 11}, {37, 38}, {22, 48}, {13, 48}, {51, 37}, {24, 19}, {2, 32}, {38, 23}, {33, 34}, {37, 44}, {31, 8}, {4, 26}, {34, 35}, {37, 28}, {48, 34}, {27, 0}, {23, 37}, {17, 29}, {38, 7}, {37, 31}, {34, 42}, {26, 20}, {22, 45}, {26, 29}, {40, 42}, {48, 30}, {46, 49}, {12, 52}, {49, 28}, {39, 14}, {23, 34}, {6, 30}, {18, 12}, {52, 49}, {21, 18}, {11, 4}, {2, 7}, {4, 17}, {19, 27}, {33, 5}, {44, 28}, {38, 9}, {34, 7}, {7, 47}, {37, 13}, {51, 12}, {42, 53}, {42, 21}, {18, 9}, {21, 39}, {4, 33}, {29, 39}, {47, 41}, {25, 13}, {50, 0}, {21, 48}, {32, 27}, {33, 53}, {39, 5}, {12, 25}, {52, 6}, {17, 44}, {16, 52}, {0, 34}, {14, 29}, {0, 19}, {13, 7}, {29, 21}, {9, 22}, {28, 45}, {1, 29}, {37, 17}, {38, 36}, {4, 23}, {38, 21}, {35, 5}, {2, 16}, {34, 30}, {37, 16}, {40, 53}, {51, 47}, {20, 32}, {7, 9}, {12, 15}, {26, 0}, {14, 44}, {53, 11}, {48, 17}}));
+    }
+}
+```
+
 #### [连通网络的操作次数](https://leetcode-cn.com/problems/number-of-operations-to-make-network-connected/)
 
 题目所述，给定一个图，找到将其所有最大连通分量连通所需更改的最少的边的数量为多少。
@@ -2405,11 +2866,295 @@ func canFinish(numCourses int, prerequisites [][]int) bool {
 }
 ```
 
+### 最短路径
+
+#### [地图分析](https://leetcode-cn.com/problems/as-far-from-land-as-possible/)
+
+找到多源最短路，改造了一下 dijkstra 算法
+
+```java
+public int maxDistance(int[][] grid) {
+		// 考虑使用 dijkstra 算法
+		// dijkstra 算法是找单源最短路经的
+		// 因此在这儿要改造一下
+		// 虚拟出一个超级节点 连接所有的起始节点 那样就可以找出从这个超级节点到 另外一个集合的最短距离
+
+		int n = grid.length;
+		int[][] dst = new int[n][n];
+		// 无向图 为了防止重复访问 需要 memo
+		boolean[][] memo = new boolean[n][n];
+
+		PriorityQueue<Node> pq = new PriorityQueue<>();
+		for (int i = 0; i < n; i++) {
+				for (int j = 0; j < n; j++) {
+						dst[i][j] = Integer.MAX_VALUE;
+						// 连接到超级节点的 dst 为 0
+						// 从 岸开始遍历 那么 岸到任意一个海的最短距离就会保存到 海节点上
+						if (grid[i][j] == 1) {
+								dst[i][j] = 0;
+								pq.add(new Node(i, j, 0));
+						}
+				}
+		}
+		// 这样就可以吧时间复杂度降下来
+		while (!pq.isEmpty()) {
+				Node top = pq.poll();
+				memo[top.x][top.y] = true;
+				for (int[] direction : directions) {
+						int newX = top.x + direction[0], newY = top.y + direction[1];
+						// 越界
+						if (newX >= n || newX < 0 || newY >= n || newY < 0) continue;
+						if (memo[newX][newY]) continue;
+						// relax
+						if (dst[newX][newY] > dst[top.x][top.y] + 1) {
+								dst[newX][newY] = dst[top.x][top.y] + 1;
+								// 更新 pq 里面的最短距离
+								pq.removeIf((node) -> node.x == newX && node.y == newY);
+								pq.add(new Node(newX, newY, dst[newX][newY]));
+						}
+				}
+		}
+		int res = -1;
+		for (int i = 0; i < n; i++) {
+				for (int j = 0; j < n; j++) {
+						// 因为结果保存在 海洋单元格内
+						if (grid[i][j] == 0) res = Math.max(res, dst[i][j]);
+				}
+		}
+		return res == Integer.MAX_VALUE ? -1 : res;
+}
+
+private static class Node implements Comparable<Node> {
+		int x, y;
+
+		int dst;
+
+		public Node(int x, int y) {
+				this.x = x;
+				this.y = y;
+				// 还没有找到
+				this.dst = Integer.MAX_VALUE;
+		}
+
+		public Node(int x, int y, int dst) {
+				this.x = x;
+				this.y = y;
+				this.dst = dst;
+		}
+
+		@Override
+		public int compareTo(Node o) {
+				return this.dst - o.dst;
+		}
+}
+
+private static int[][] directions = new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+```
+
+### [1786. 从第一个节点出发到最后一个节点的受限路径数](https://leetcode-cn.com/problems/number-of-restricted-paths-from-first-to-last-node/)
+
+说实话 我是看不懂受限路径到底是什么意思，所以看了下他们的思路，自己实现了一下。现在贴上原题
+
+> 现有一个加权无向连通图。给你一个正整数 n ，表示图中有 n 个节点，并按从 1 到 n 给节点编号；另给你一个数组 edges ，其中每个 edges[i] = [ui, vi, weighti] 表示存在一条位于节点 ui 和 vi 之间的边，这条边的权重为 weighti 。<br/><br/>
+> 从节点 start 出发到节点 end 的路径是一个形如 [z0, z1, z2, ..., zk] 的节点序列，满足 z0 = start 、zk = end 且在所有符合 0 <= i <= k-1 的节点 zi 和 zi+1 之间存在一条边。<br/><br/>
+> 路径的距离定义为这条路径上所有边的权重总和。用 distanceToLastNode(x) 表示节点 n 和 x 之间路径的最短距离。受限路径 为满足 distanceToLastNode(zi) > distanceToLastNode(zi+1) 的一条路径，其中 0 <= i <= k-1 。<br/><br/>
+> 返回从节点 1 出发到节点 n 的 受限路径数 。由于数字可能很大，请返回对 109 + 7 取余 的结果。
+
+- [参考的解法](https://leetcode-cn.com/problems/number-of-restricted-paths-from-first-to-last-node/solution/xiang-jie-dui-you-hua-dijkstra-dong-tai-i6j0d/)
+
+- 模仿的解法
+
+超时，怀疑是 构建图 花费太多时间
+
+```java
+import microsoft.PlusOne;
+
+import java.util.*;
+
+public class CountRestrictedPaths_1786 {
+
+    private static class Edge {
+        int from, to;
+        int weight;
+
+        public Edge(int from, int to, int weight) {
+            this.from = from;
+            this.to = to;
+            this.weight = weight;
+        }
+
+        public int getOther(int node) {
+            if (node == from) return to;
+            return from;
+        }
+    }
+
+    private static class Map {
+        List<List<Edge>> map;
+        public int capacity;
+
+        public Map(int capacity) {
+            this.capacity = capacity;
+            this.map = new ArrayList<>();
+            for (int i = 0; i < this.capacity; i++) {
+                this.map.add(new ArrayList<>());
+            }
+        }
+
+        public void addEdge(int from, int to, int weight) {
+            Edge e = new Edge(from, to, weight);
+            this.map.get(from).add(e);
+            this.map.get(to).add(e);
+        }
+
+        public List<Edge> adj(int node) {
+            return this.map.get(node);
+        }
+    }
+
+    private static class Pair implements Comparable<Pair> {
+        int node;
+        int weight;
+
+        public Pair(int node, int weight) {
+            this.node = node;
+            this.weight = weight;
+        }
+
+        @Override
+        public int compareTo(Pair o) {
+            return weight - o.weight;
+        }
+    }
+
+    // 返回 dp 结果
+    // 这个题目说的意思是 只要从尾结点开始遍历 并且到下一个点的距离 大于 当前点的距离 就是逆序的
+    // 按照题解的描述
+    // 这条路径的搜索过程可以看做，从结尾（第 5 个点）出发，逆着走，每次选择一个点（例如 a）之后，
+    // 再选择下一个点（例如 b）时就必须满足最短路距离比上一个点（点 a）要远，如果最终能选到起点（第一个点），说明统计出一条有效路径。
+    public int[] dijkstra(Map map, int start) {
+        int[] dstTo = new int[map.capacity];
+        Arrays.fill(dstTo, Integer.MAX_VALUE);
+        dstTo[start] = 0;
+
+        PriorityQueue<Pair> queue = new PriorityQueue<>();
+        queue.add(new Pair(start, 0));
+
+        // 无向图 防止重复
+        boolean[] memo = new boolean[map.capacity];
+
+        while (!queue.isEmpty()) {
+            Pair top = queue.poll();
+            memo[top.node] = true;
+            for (Edge e : map.adj(top.node)) {
+                int other = e.getOther(top.node);
+                if (!memo[other] && dstTo[other] > dstTo[top.node] + e.weight) {
+                    dstTo[other] = dstTo[top.node] + e.weight;
+                    queue.removeIf((p) -> p.node == other);
+                    queue.add(new Pair(other, dstTo[other]));
+                }
+            }
+        }
+        return dstTo;
+    }
+
+    public int countRestrictedPaths(int n, int[][] edges) {
+        Map map = new Map(n + 1);
+
+        for (int[] edge : edges) {
+            map.addEdge(edge[0], edge[1], edge[2]);
+        }
+
+        // 返回节点的数据
+        int[] dstTo = dijkstra(map, n);
+
+        // 得到了dist数组，可以得到递推关系，dp[u] += dp[v], when v links to v and  dist[u] > dist[v]
+        //        因此先算dist小的，才可以算dp，需要dist从小到大排序, 然后依次计算。
+        // 保存到某个点 以及对应的 dst 距离
+        List<int[]> pairs = new ArrayList<>();
+        for (int i = 1; i < dstTo.length; i++) {
+            pairs.add(new int[]{i, dstTo[i]});
+        }
+        pairs.sort(Comparator.comparingInt(a -> a[1]));
+
+        int[] dp = new int[n + 1];
+        dp[n] = 1;
+        int mod = 1000000007;
+
+        for (int[] p : pairs) {
+            int node = p[0], cur = p[1];
+            for (Edge adj : map.adj(node)) {
+                int other = adj.getOther(node);
+                if (cur > dstTo[other]) {
+                    dp[node] = (dp[node] + dp[other]) % mod;
+                }
+            }
+        }
+        return dp[1];
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new CountRestrictedPaths_1786().countRestrictedPaths(5, new int[][]{
+                {1, 2, 3},
+                {1, 3, 3},
+                {2, 3, 1},
+                {1, 4, 2},
+                {5, 2, 2},
+                {3, 5, 1},
+                {5, 4, 10}
+        }));
+        System.out.println(new CountRestrictedPaths_1786().countRestrictedPaths(7, new int[][]{
+                {1, 3, 1},
+                {4, 1, 2},
+                {7, 3, 4},
+                {2, 5, 3},
+                {5, 6, 1},
+                {6, 7, 2},
+                {7, 5, 3},
+                {2, 6, 4}
+        }));
+    }
+}
+```
+
+## 博弈问题
+
+### [预测赢家](https://leetcode-cn.com/problems/predict-the-winner/)
+
+分别从数组的两端取值，问最后谁获胜。
+
+模拟取值的过程即可
+
+```java
+public boolean PredictTheWinner(int[] nums) {
+		int[][] memo = new int[nums.length][nums.length];
+		for (int[] ints : memo) {
+				Arrays.fill(ints, -1);
+		}
+		return recursionMemo(nums, 0, nums.length - 1, memo) >= 0;
+}
+
+public int recursionMemo(int[] nums, int i, int j, int[][] memo) {
+		if (i > j) return 0;
+		if (i == j) return nums[i];
+		if (memo[i][j] != -1) return memo[i][j];
+		// 分别选取左边和右边的值进行比较
+		int left = nums[i] - recursionMemo(nums, i + 1, j, memo);
+		int right = nums[j] - recursionMemo(nums, i, j - 1, memo);
+		memo[i][j] = Math.max(left, right);
+		return memo[i][j];
+}
+```
+
+### [石子游戏](https://leetcode-cn.com/problems/stone-game/)
+
+### [石子游戏 VII](https://leetcode-cn.com/problems/stone-game-vii/)
+
 ## 杂题
 
 ### [递增的三元子序列](https://leetcode-cn.com/problems/increasing-triplet-subsequence/)
 
-首先想到嘛，用两个数组分别存储从左到右的最小值和最右到左的最大值，那么如果 nums 中一个数 num 大于这个最小值小于这个最大值，是一定可以的
+- 首先想到嘛，用两个数组分别存储从左到右的最小值和最右到左的最大值，那么如果 nums 中一个数 num 大于这个最小值小于这个最大值，是一定可以的
 
 ```golang
 func increasingTriplet(nums []int) bool {
@@ -2450,7 +3195,127 @@ func min(a, b int) int {
 }
 ```
 
+- 还可以进一步优化
+
+他实际上是找这么一组 3 个数 num1 < num2 < num3
+
+那么如果我在 num3 之前找到了这两个数字 num1 num2 即可
+
+所以用 一个 min mid 来记录之前找到的 num1 num2。
+
+其中 min 保存之前遇到的最小值, mid 保存之前 大于 min 的最小值，那么 如果碰到 同时大于 min、mid 的数 就可以直接返回 true 了。
+
+但是可能遇到这种情况，在访问找到 num3 的时候，min 对应的数字的下标在 mid 之后。
+
+但是考虑这种情况的话，一定有一个小于 mid 的 历史 min 值在 mid 之前，所以其实还是一个完整的三元组。
+
+```java
+class Solution {
+    public boolean increasingTriplet(int[] nums) {
+        if (nums == null || nums.length < 3) return false;
+        int min = Integer.MAX_VALUE, mid = Integer.MAX_VALUE;
+        for (int num : nums) {
+            if (num <= min) {
+                min = num;
+            } else if (num <= mid) {
+                mid = num;
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
 ### 二分
+
+#### [袋子里最少数目的球](https://leetcode-cn.com/problems/minimum-limit-of-balls-in-a-bag/)
+
+> 给你一个整数数组 nums ，其中 nums[i] 表示第 i 个袋子里球的数目。同时给你一个整数 maxOperations 。<br/>
+> 你可以进行如下操作至多 maxOperations 次：<br/>
+> 选择任意一个袋子，并将袋子里的球分到 2 个新的袋子中，每个袋子里都有 正整数 个球。<br/>
+> 比方说，一个袋子里有 5 个球，你可以把它们分到两个新袋子里，分别有 1 个和 4 个球，或者分别有 2 个和 3 个球。<br/>
+> 你的开销是单个袋子里球数目的 最大值 ，你想要 最小化 开销。<br/>
+> 请你返回进行上述操作后的最小开销。
+
+- bruteforce
+
+直接的做法就是不停的找到数组中最大的数，然后在 maxOperations 的次数限制内进行分隔，找到分隔中最小的数据。
+
+为了 o(1) 的找到最大的数，所以使用的 pq 来保存中间数据
+
+```java
+// bruteforce 模拟的方法 通过对递归的方法对最大数进行不停的分隔 得到最后的结果
+public int minimumSizeBruteForce(int[] nums, int maxOperations) {
+		PriorityQueue<Integer> pq = new PriorityQueue<>((a, b) -> b - a);
+		for (int num : nums) {
+				pq.add(num);
+		}
+		return recursion(pq, maxOperations);
+}
+
+public int recursion(PriorityQueue<Integer> pq, int operations) {
+		assert !pq.isEmpty();
+		if (operations == 0) return pq.peek();
+		int max = pq.poll();
+		int res = Integer.MAX_VALUE;
+		for (int i = 1; i <= max / 2; i++) {
+				int other = max - i;
+				pq.add(i);
+				pq.add(other);
+				res = Math.min(res, recursion(pq, operations - 1));
+				pq.remove(i);
+				pq.remove(other);
+		}
+		pq.add(max);
+		return res;
+}
+```
+
+- 二分查找
+
+二分查找可以用于`查找最小的最大值，最大的最小值等情况`。
+
+那么可以以结果作为区间，每次判断这个最小开销是否能够实现，就可以去缩短遍历的范围。
+
+但是需要知道如何找到能否实现这个函数：
+
+- 当用 mid 去规定最小开销的时候，意味着所有大于 mid 的数字都需要被拆分到最小开销中
+- 拆分的时候，如 num = 8, mid = 4, 那么只需要拆分一次即可，如 num = 17, mid = 7，那么需要拆分成[7,7,3] 需要拆分两次。所以拆分的代价是 num / mid，在 num % mid == 0 时要减一
+
+```java
+// 二分查找 二分的范围是返回的最小结果
+// 即最小代价
+public int minimumSize(int[] nums, int maxOperations) {
+		// nums 中最大的数为 j 的大小
+		int i = 1, j = 1000000000;
+		int res = 0;
+		while (i <= j) {
+				int mid = i + (j - i) / 2;
+				if (check(nums, mid, maxOperations)) {
+						j = mid - 1;
+						res = mid;
+				} else {
+						i = mid + 1;
+				}
+		}
+		return res;
+}
+
+// 检查当前遍历到的 mid 的状态 能不能在 maxOperations 的限制下达到
+public boolean check(int[] nums, int mid, int maxOperations) {
+		int res = 0;
+		for (int num : nums) {
+				if (num % mid == 0) {
+						res += num / mid - 1;
+				} else {
+						res += num / mid;
+				}
+		}
+		return res <= maxOperations;
+}
+```
 
 #### [找出第 k 小的距离对](https://leetcode-cn.com/problems/find-k-th-smallest-pair-distance/)
 
@@ -2641,6 +3506,378 @@ public char[] getCharArray(String word) {
 		}
 		char[] res = new char[newIndex];
 		System.arraycopy(tmp, 0, res, 0, newIndex);
+		return res;
+}
+```
+
+### 计算器
+
+#### [基本计算器](https://leetcode-cn.com/problems/basic-calculator/)
+
+其本质是一个 中值表达式 求值。实际上只需要注意 符号的 优先级即可。（PS：·· 好多细节没注意到 就会 gg）
+
+TODO: 中值表达式 转成 逆波兰表达式
+
+```java
+import java.util.Deque;
+import java.util.LinkedList;
+
+public class BasicCalculator_224 {
+
+    private int operate(char operator, int n1, int n2) {
+        switch (operator) {
+            case '+' -> {
+                return n1 + n2;
+            }
+            case '-' -> {
+                return n2 - n1;
+            }
+        }
+        return 0;
+    }
+
+    // 字符的优先级！！！ TODO: 中值表达式 转 逆波兰表达式
+
+
+    // 中缀转后缀
+    public int calculate(String s) {
+        // 只有 数字 + - ( )
+
+        Deque<Integer> number = new LinkedList<>();
+        Deque<Character> operators = new LinkedList<>();
+        if (s.length() > 0 && s.charAt(0) == '-') {
+            s = '0' + s;
+        }
+
+        s = s.replaceAll("\\(\\+", "(0+");
+        s = s.replaceAll("\\(-", "(0-");
+        for (int i = 0; i < s.length(); ) {
+            char c = s.charAt(i);
+
+            if (c == ' ') {
+                i++;
+            } else if (c == '+') {
+                // 需要弹出栈 直到优先级相等 因为只有 - + 所以需要一直弹出到 -
+                while (operators.size() > 0 && operators.peekLast() != '+' && operators.peekLast() != '(') {
+                    int first = number.removeLast();
+                    int second = 0;
+                    if (!number.isEmpty()) second = number.removeLast();
+                    number.add(operate(operators.removeLast(), first, second));
+                }
+                operators.add(c);
+                i++;
+            } else if (c == '-') {
+                while (operators.size() > 0 && operators.peekLast() == '-' && operators.peekLast() != '(') {
+                    int first = number.removeLast();
+                    int second = 0;
+                    if (!number.isEmpty()) second = number.removeLast();
+                    number.add(operate(operators.removeLast(), first, second));
+                }
+                operators.add(c);
+                i++;
+            } else if (c == '(') {
+                operators.add(c);
+                i++;
+            } else if (c == ')') {
+                // 弹栈
+                while (operators.size() > 0 && operators.peekLast() != '(') {
+                    int first = number.removeLast();
+                    int second = 0;
+                    if (!number.isEmpty()) second = number.removeLast();
+                    number.add(operate(operators.removeLast(), first, second));
+                }
+                // 去掉 (
+                operators.removeLast();
+                i++;
+            } else {
+                int num = 0;
+                // 数字
+                while (i < s.length() && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+                    num = num * 10 + s.charAt(i) - '0';
+                    i++;
+                }
+                number.add(num);
+            }
+        }
+
+        while (!operators.isEmpty()) {
+            int first = number.removeLast();
+            int second = 0;
+            if (!number.isEmpty()) second = number.removeLast();
+            number.add(operate(operators.removeLast(), first, second));
+        }
+        return number.getLast();
+    }
+
+
+    public static void main(String[] args) {
+        System.out.println(new BasicCalculator_224().calculate( "(6)-(8)-(7)+(1+(6))"));
+        System.out.println(new BasicCalculator_224().calculate( "1 + 1"));
+        System.out.println(new BasicCalculator_224().calculate( " 2-1 + 2 "));
+        System.out.println(new BasicCalculator_224().calculate( "(1+(4+5+2)-3)+(6+8)"));
+    }
+}
+
+```
+
+### 数学问题
+
+#### [1802. 有界数组中指定下标处的最大值](https://leetcode-cn.com/problems/maximum-value-at-a-given-index-in-a-bounded-array/)
+
+> 给你三个正整数 n、index 和 maxSum 。你需要构造一个同时满足下述所有条件的数组 nums（下标 从 0 开始 计数）：
+> nums.length == n
+> nums[i] 是 正整数 ，其中 0 <= i < n
+> abs(nums[i] - nums[i+1]) <= 1 ，其中 0 <= i < n-1
+> nums 中所有元素之和不超过 maxSum
+> nums[index] 的值被 最大化
+> 返回你所构造的数组中的 nums[index] 。
+
+这个问题就是说构建一个只有正整数的数组，且相邻数字之间差值不能超过 1，问 如何构建才能使 index 下标位置的数最大。
+
+其实偏向于贪心的策略，既然要 index 最大，那么每次遍历的时候，我都在 index 上 +1，看在没有打到 maxSum 的时候能够给这个地方添加几次。最后其实际的生长过程可以看做下面的一个过程。
+
+> 例输入：n = 4, index = 2, maxSum = 6
+
+1. 构建基础数组，因为要求每个数字都为正整数，因此最小为 1
+
+<pre>
+1 1 1 1
+    _
+    |
+  index 
+</pre>
+
+2. 从 index 开始生长
+
+<pre>
+    2 
+
+1 1 1 1
+    _
+    |
+  index 
+</pre>
+
+这个时候 已经不能再加 1 了 所以直接返回 2
+
+所以其实就是构建一个题型的台状结构，每层比下一层只会高 1 个，最后到 index 的位置最高即可。
+
+```java
+class Solution {
+    public int maxValue(int n, int index, int maxSum) {
+        // 因为是正整数 所以相当于每个数字至少要填上1
+        int remain = maxSum - n;
+
+        // 现在 index 位置填入的是 1
+        int res = 1;
+        // 然后根据剩下的数字 从 index 开始增加
+        int l = index, r = index;
+
+        while (l > 0 || r < n - 1) {
+            // 在 l 到 r 之间的数字 加 1
+            int len = r - l + 1;
+            if (remain >= len) {
+                // index 对应位置的数字 一定是在 l,r 之间的
+                res += 1;
+                // 因为相邻不能相差 1 所以 每次 l、r 向外增加 1 位长度
+                l = Math.max(0, l - 1);
+                r = Math.min(r + 1, n - 1);
+                remain -= len;
+            } else {
+                break;
+            }
+        }
+
+        // 还剩下 全部加一
+        res += remain / n;
+        return res;
+    }
+}
+```
+
+### [132 模式](https://leetcode-cn.com/problems/132-pattern/submissions/)
+
+在一个数组中找到下标 i < j < k 满足 nums[i] < nums[k] < nums[j] 也就是说 j 对应的数值 是三个中最大的 k 次之，最小的是 i
+
+那么很容易知道 i 的值其实需要越小越好，越小的话，后面 k、j 的条件就最好满足，因此第一步就是求出从左向右的最小值数组
+
+- brute force 的方法(o(n^2))
+
+既然已经知道 i 取从左向右的最小值，那么只想就需要确定 j < k 且 nums[i] < nums[k] < nums[j]，也就是在后续的数组中找到一对逆序的数组，那么 o(n^2) 的算法就很好写了
+
+```java
+// 找到 1 3 2 模式
+// bruteforce 的方法 因为要找到 i < j < k 满足 nums[i] < nums[k] < nums[j] 的格式
+// 即中间的数是最大 那么 nums[i] 一定是最小 所以先维护一个 leftMin 表示从左侧开始的最小值
+// 然后开始遍历数组 找到一个 逆序数对 且逆序数对中的最小值 大于 leftMin 的值 即可找到
+// 所以是 o(n^2)
+public boolean find132patternBruteForce(int[] nums) {
+		if (nums == null || nums.length < 3) return false;
+
+		int[] leftMin = new int[nums.length];
+		leftMin[0] = nums[0];
+		for (int i = 1; i < nums.length; i++) {
+				leftMin[i] = Math.min(leftMin[i - 1], nums[i]);
+		}
+
+		// 先固定一个最小值
+		// 然后在找到一个逆序的点
+		for (int i = 1; i < nums.length - 1; i++) {
+				for (int j = i + 1; j < nums.length; j++) {
+						if (nums[j] > leftMin[i] && nums[i] > nums[j]) return true;
+				}
+		}
+
+		return false;
+}
+```
+
+- 优化的算法（o(n)）
+
+之前的算法寻找逆序的时候，是在确定了 j 值 的情况下从前向后寻找 k 值，如果能够知道之前访问的过的 j 值，作为当前 k 值，那么就可以进一步的降低复杂度。
+
+因为，在满足 nums[j] > leftMin[j] (即 nums[i]) 时，如果 k 值正好取到小于 nums[j] 的值 且 大于 nums[i] 时满足条件。所以 nums[k] 的值 在取小于 nums[j] 的值的时候 越大越好，因为这样才可能更大程度的满足 nums[k] > nums[i] 的条件。
+
+所以使用一个单调栈来保存 j 之后遍历的历史情况，越靠近栈底的值越大，只需要取到栈中需要的满足小于 nums[j] 的最大值即可。
+
+这样 栈中还保存着较大的值，之后再遍历的时候，还以用这个比 nums[j] 大的值，与 j 之前更大的值匹配成 132 组合。 而 j 之后的较小值，如何满足题设条件，会在第一次访问的时候就返回了，所以也不会存在漏的结果。
+
+```java
+public boolean find132pattern(int[] nums) {
+		if (nums == null || nums.length < 3) return false;
+
+		int[] leftMin = new int[nums.length];
+		leftMin[0] = nums[0];
+		for (int i = 1; i < nums.length; i++) {
+				leftMin[i] = Math.min(leftMin[i - 1], nums[i]);
+		}
+		Deque<Integer> stack = new LinkedList<>();
+
+		// 从后向前找 因为要找的是 j < k nums[j] > nums[k] 的结果
+		// 那么只需要保存遍历的 j 之后的比 nums[j] 小 且比 leftMin 大的最大值 这样就可以满足要求了
+		// 所以 stack 中保存的是 j 之后的 较大的值 如果能够在其中找到一个小于 nums[j] 的值 就证明可行
+		for (int j = nums.length - 1; j >= 0; j--) {
+				// 必须要比左侧最小的大 才能比较
+				if (nums[j] > leftMin[j]) {
+						// 因为要在 j 右边找一个更小的 nums[k] 所以 比 nums[j] 小的 都出栈
+						// 比较其中的最大值与 leftMin 的大小既可以知道
+						int remove = Integer.MIN_VALUE;
+						while (!stack.isEmpty() && stack.peekLast() < nums[j]) {
+								remove = stack.removeLast();
+						}
+						if (remove > leftMin[j]) return true;
+						stack.addLast(nums[j]);
+				}
+		}
+		return false;
+}
+```
+
+### 最大子序和
+
+#### [简单的题型](https://leetcode-cn.com/problems/maximum-subarray/)
+
+简单的题型如 剑指offer 上所述，只需要用一个数组保存以当前结尾的最大子序和即可。转移的时候，如果之前的最大子序和小于 0，说明应该重新开始计数。
+
+```java
+class Solution {
+    public int maxSubArray(int[] nums) {
+        int[] dp = new int[nums.length];
+        int res = Integer.MIN_VALUE;
+        for (int i = 0; i < nums.length; i++) {
+            if (i == 0 || dp[i - 1] < 0) {
+                dp[i] = nums[i];
+            } else {
+                dp[i] = dp[i - 1] + nums[i];
+            }
+            res = Math.max(res, dp[i]);
+        }
+        return res;
+    }
+}
+```
+
+#### [删除一次得到子数组最大和](https://leetcode-cn.com/problems/maximum-subarray-sum-with-one-deletion/)
+
+- 直觉想法
+
+拿到这个题目的第一个直觉就是跟上面那个基本一致，但是需要删除一个数字，那么删除的这个数字一定存在这样的性质。
+
+> 删除这个数字后，有可能左右的最大子序和加起来更大，所以这个数字一定是负数。
+
+那么，只需要知道这个数字左边和右边的分别的最大子序和即可，那么就可以用两次上面的算法，得到以 i 结尾的从左向右最大子序和 和 以 i 结尾的从右想左的最大子序和即可
+
+```java
+// 最大子序和的变种 如果中间可以删除一个数字 问能够形成的最大子序和为多少
+public int maximumSumWithTwoDirection(int[] arr) {
+		if (arr == null || arr.length == 0) return 0;
+		if (arr.length == 1) return arr[0];
+
+		// 因此要删除一个的话 只需要遍历被删除的项即可，然后将以 arr[i] 结尾的左右的最大子序和累加起来即可
+		int[] left = new int[arr.length + 1];
+		int[] right = new int[arr.length + 1];
+
+		for (int i = 0; i < arr.length; i++) {
+				if (left[i] < 0) left[i + 1] = arr[i];
+				else left[i + 1] = left[i] + arr[i];
+		}
+
+		for (int j = arr.length - 1; j >= 0; j--) {
+				if (right[j + 1] < 0) right[j] = arr[j];
+				else right[j] = right[j + 1] + arr[j];
+		}
+
+		int res = Math.max(left[arr.length], right[0]);
+		// 遍历需要删除的负数点 因为只有负数才需要删除 删除后才可能达到需要的连续两个段的最大值
+		for (int i = 0; i < arr.length; i++) {
+				// 只有小于 0 才需要分隔
+				if (arr[i] < 0) {
+						// 注意的是需要分离开 i == 0 i == arr.length - 1 因为 默认是0 会影响 res 为负数的情况
+						if (i == 0) {
+								res = Collections.max(Arrays.asList(right[i + 1], res));
+						} else if (i == arr.length - 1) {
+								res = Collections.max(Arrays.asList(left[i], res));
+						} else {
+								// 平时的话 去掉这个值 只需要在三部分中取较大值与 res 比较即可
+								res = Collections.max(Arrays.asList(left[i] + right[i + 1], left[i], right[i + 1], res));
+						}
+				}
+		}
+		// 没有小于 0 的话 说明全是正数
+		// 返回和即可
+		return res;
+}
+```
+
+- 两个 dp 数组保存状态
+
+那么可以使用一个循环得到结果。
+
+1. 仍然需要一个数组保存以 arr[i] 结尾时的最大子序和
+2. 需要一个数组保存以 arr[i] 结尾时删除一个数字的最大子序和
+
+那么删除的这个数字可能是遍历的 arr[i] 或者 之前就已经删除了一个数字，arr[i] 不能被删除。所以**第2个**数组的更新策略即`deleteOne[i] = Math.max(deleteOne[i - 1] + arr[i], dp[i - 1])`。
+
+即保留当前的 arr[i] 那么只能取之前删除了一次的最大子序和 和 删除当前的 arr[i]，那么就要去之前没有删除数字的最大子序和 dp[i - 1]。
+
+```java
+public int maximumSum(int[] arr) {
+		if (arr == null || arr.length == 0) return 0;
+
+		int[] dp = new int[arr.length];
+		// 保存删除一个的结果
+		int[] deleteOne = new int[arr.length];
+
+		dp[0] = arr[0];
+		// 最小值到达 -10^ (4)
+		deleteOne[0] = -100000;
+		int res = Math.max(dp[0], deleteOne[0]);
+		for (int i = 1; i < arr.length; i++) {
+				dp[i] = Math.max(arr[i], dp[i - 1] + arr[i]);
+				// 要删除一个数的话 要么保留当前数 和 之前删除一个数形成的最大值比较 要么删除当前这个数 与之前保存的最大值比较
+				deleteOne[i] = Math.max(deleteOne[i - 1] + arr[i], dp[i - 1]);
+				res = Math.max(res, Math.max(dp[i], deleteOne[i]));
+		}
 		return res;
 }
 ```

@@ -9,6 +9,7 @@ toc: true
 date: 2021-02-24 22:21:07
 thumbnail:
 ---
+
 # 排序算法
 
 简单实现了一下几种常见的内排序算法
@@ -20,11 +21,21 @@ thumbnail:
 - 基数排序
 - 桶排序
 
+| 排序算法 | 平均执行效率 | 稳定性 | 备注                                                   |
+| -------- | ------------ | ------ | ------------------------------------------------------ |
+| 插入排序 | o(n^2)       | 稳定   | 我觉得这个稳定性取决于实现的时候的停止条件             |
+| 冒泡排序 | o(n^2)       | 稳定   |                                                        |
+| 选择排序 | o(n^2)       | 非稳定 | 因为选择最小 or 最大元素交换的时候回改变原来的顺序     |
+| 希尔排序 | o(nlogn)     | 稳定   | 希尔排序是一个根据步长的来的插入排序                   |
+| 快排     | o(nlogn)     | 非稳定 | 分治的方法，递归的处理子数组，每次寻找到一个数字的位置 |
+| 堆排序   | o(nlogn)     | 非稳定 | 用大顶堆 or 小顶堆实现，调整堆的有序性需要 logn 的时间 |
+| 归并排序 | o(nlogn)     | 稳定   | 使用分治，每次合并两个已经有序的数组                   |
+
 <!-- more -->
 
 ## 希尔排序
 
-希尔排序实际上就是带步长的插入排序。不同于插入排序按照步长为1进行排序，希尔排序采用了缩进的步长。每次只在相同步长的一组数据中进行排序。
+希尔排序实际上就是带步长的插入排序。不同于插入排序按照步长为 1 进行排序，希尔排序采用了缩进的步长。每次只在相同步长的一组数据中进行排序。
 
 参考维基百科的解释，例如对于数组 []int{1,5,4,2,7,45,75,3,4,87} 排序，选取`步长`为 len() / 2，且每次步长`缩进一半`
 
@@ -68,9 +79,9 @@ thumbnail:
 75  87
 </pre>
 
-- 第三次分组 （步长为1）
+- 第三次分组 （步长为 1）
 
-步长为1 相当于插入排序 直接排序即可
+步长为 1 相当于插入排序 直接排序即可
 
 ```golang
 package sort
@@ -101,6 +112,7 @@ func shellSort(nums []int) {
 	}
 }
 ```
+
 ## 归并排序
 
 ```golang
@@ -206,6 +218,82 @@ func divideList(node *ListNode) *ListNode {
 	mid := node.Next
 	node.Next = nil
 	return mid
+}
+```
+
+### 寻找逆序数对
+
+leet code 包含一个逆序数对的例题，[315. 计算右侧小于当前元素的个数](https://leetcode-cn.com/problems/count-of-smaller-numbers-after-self/)
+
+找到当前数字右侧的小于这个数的数量，实际上就是去找到 当前这个数 大于 后面多少数的数量，一大一小，即构成逆序数对，所以可以用归并来做
+
+```java
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class CountRightSmaller_315 {
+
+    public List<Integer> countSmaller(int[] nums) {
+        int n = nums.length;
+        int[] res = new int[n], indexes = new int[n];
+        // 保存原始数组的数组 好在 res 数组中定位
+        for (int i = 0; i < n; i++) {
+            indexes[i] = i;
+        }
+        mergeSort(nums, 0, n - 1, res, indexes);
+        return Arrays.stream(res).boxed().collect(Collectors.toList());
+    }
+
+    public void mergeSort(int[] nums, int i, int j, int[] res, int[] indexes) {
+        if (i >= j) return;
+
+        int mid = i + (j - i) / 2;
+        mergeSort(nums, i, mid, res, indexes);
+        mergeSort(nums, mid + 1, j, res, indexes);
+        merge(nums, i, mid, j, res, indexes);
+    }
+
+    public void merge(int[]nums, int start, int mid, int end, int[] res, int[] indexes) {
+        int i = start, j = mid + 1;
+        int[] tmp = new int[end - start + 1], tmpIndexes = new int[end - start + 1];
+
+        int index = 0;
+        while (i <= mid && j <= end) {
+            if (nums[i] <= nums[j]) {
+                // 说明 j 之前相当于 i 来说都是逆序了
+                tmp[index] = nums[i];
+                res[indexes[i]] += j - mid - 1;
+                tmpIndexes[index++] = indexes[i++];
+            } else {
+                // nums[j] < nums[i]
+                tmp[index] = nums[j];
+                tmpIndexes[index++] = indexes[j++];
+            }
+        }
+
+        while (i <= mid) {
+            // 说明 j 之前相当于 i 来说都是逆序了
+            tmp[index] = nums[i];
+            res[indexes[i]] += j - mid - 1;
+            tmpIndexes[index++] = indexes[i++];
+        }
+
+        while (j <= end) {
+            tmp[index] = nums[j];
+            tmpIndexes[index++] = indexes[j++];
+        }
+
+        index = 0;
+        while (start <= end) {
+            nums[start] = tmp[index];
+            indexes[start++] = tmpIndexes[index++];
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new CountRightSmaller_315().countSmaller(new int[]{-1, -1}));
+    }
 }
 ```
 

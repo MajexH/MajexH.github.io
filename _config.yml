@@ -100,13 +100,9 @@ theme: icarus
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-  type: rsync
-  host: 108.160.138.27
-  user: nginx
-  root: /home/nginx/public
-  port: 22
-  delete: true
-  verbose: true
+  type: git
+  repo: https://github.com/MajexH/MajexH.github.io
+  branch: deploy
 
 encrypt: # hexo-blog-encrypt
   abstract: 请输入密码查看.
