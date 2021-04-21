@@ -148,9 +148,9 @@ search:
 # https://ppoffice.github.io/hexo-theme-icarus/categories/Plugins/Comment/
 comment:
     type: gitalk
-    client_id: 229758a40bcba2667c41
-    client_secret: 543e850c3a7187040f8eebc05bd232f0f0a3e767
-    repo: blog-comment
+    client_id: d52966fa332bb35fad8e
+    client_secret: b20dd1057e7520a00db68e0a77e5d66fe54edc36 
+    repo: MajexH.github.io
     owner: MajexH
     admin:
         - MajexH
