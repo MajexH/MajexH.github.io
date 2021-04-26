@@ -3230,6 +3230,47 @@ class Solution {
 
 ### 二分
 
+二分查找可以用于`查找最小的最大值，最大的最小值等情况`。
+
+#### [在 D 天内送达包裹的能力](https://leetcode-cn.com/problems/capacity-to-ship-packages-within-d-days/)
+
+要求的sahib`每天最低运载能力的最大值`的问题
+
+所以可以以运载能力为界限来二分求取，每次看在 mid 限制下的运载能力能否分成 D 份即可
+
+```java
+public int shipWithinDays(int[] weights, int D) {
+		// 二分查找
+		if (weights == null || weights.length == 0) return 0;
+		int l = Arrays.stream(weights).max().getAsInt(), r = Arrays.stream(weights).reduce(Integer::sum).getAsInt();
+
+		while (l < r) {
+				int mid = l + (r - l) / 2;
+
+				if (canGenerate(weights, D, mid)) {
+						r = mid;
+				} else {
+						l = mid + 1;
+				}
+		}
+		return l;
+}
+
+public boolean canGenerate(int[] weights, int D, int mid) {
+		int curWeight = 0, curSplit = 1;
+		
+		for (int weight : weights) {
+				if (curWeight + weight > mid) {
+						curWeight = 0;
+						curSplit++;
+				}
+				curWeight += weight;
+		}
+		
+		return curSplit <= D;
+}
+```
+
 #### [袋子里最少数目的球](https://leetcode-cn.com/problems/minimum-limit-of-balls-in-a-bag/)
 
 > 给你一个整数数组 nums ，其中 nums[i] 表示第 i 个袋子里球的数目。同时给你一个整数 maxOperations 。<br/>
