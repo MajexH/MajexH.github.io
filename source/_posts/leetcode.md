@@ -423,6 +423,92 @@ public String removeKdigits(String num, int k) {
 
 ## 滑动窗口
 
+### [最高频元素的频数](https://leetcode-cn.com/problems/frequency-of-the-most-frequent-element/)
+
+> 元素的 频数 是该元素在一个数组中出现的次数。<br/>
+> 给你一个整数数组 nums 和一个整数 k。在一步操作中，你可以选择 nums 的一个下标，并将该下标对应元素的值增加 1。<br/>
+> 执行最多 k 次操作后，返回数组中最高频元素的 最大可能频数。<br/>
+
+简单的说法就是，如果能够让元素 ++ k 次，问最多能出现的数的频率是多少。
+
+这道题很明显就是一个贪心，因为只能存在 ++ 的操作，所以只要让离自己近的数字先 ++ 到与自己相等的状态，消耗的 k 的数量一定是最小的。
+
+- brute force
+
+暴力的解法就直接遍历能够成为最大的频率数，然后向前遍历数字 ++ 看能够形成的最大频率是多少。时间效率较低，最差能到 o(n^2)，所以采用优化的方法，统计了每个数字出现的次数，这样可以压缩数组的长度，减少处理时间，不过时间效率仍然较低。
+
+```java
+private static class Node {
+		int num;
+		int count;
+
+		public Node(int num, int count) {
+				this.num = num;
+				this.count = count;
+		}
+}
+public int maxFrequency(int[] nums, int k) {
+
+		List<Node> lists = new ArrayList<>();
+		Map<Integer, Integer> memo = new HashMap<>();
+		for (int num : nums) {
+				memo.put(num, memo.getOrDefault(num, 0) + 1);
+		}
+		for (int key : memo.keySet()) {
+				lists.add(new Node(key, memo.get(key)));
+		}
+		lists.sort(Comparator.comparingInt(a -> a.num));
+
+		int max = 1;
+		// 这样就可以压缩 看可以遍历几个了
+		// 这边是贪心的思想做的 就是让小于自己的数 去尝试++ 看最多能够得到多少的频率
+		// 直接从离自己最近的开始 ++ 这样出来的结果 一定是最大的
+		for (int i = 0; i < lists.size(); i++) {
+				Node cur = lists.get(i);
+				int tmpMax = cur.count, tmpK = k;
+				for (int j = i - 1; j >= 0; j--) {
+						Node pre = lists.get(j);
+						// 这个一个数字变换过来的大小
+						int t = cur.num - pre.num;
+						if (tmpK < t) break;
+						int min = Math.min(tmpK / t, pre.count);
+						// 现在要看能把几个数字变换过来
+						tmpMax += min;
+						tmpK -= min * t;
+				}
+				max = Math.max(max, tmpMax);
+		}
+
+		return max;
+}
+```
+
+- 滑动窗口
+
+其实上面那个贪心的思想，可以用滑动窗口来解决。
+
+可以用一对数 `[l, r]` 来框定一段长度，那么所以的数字如果需要变化到 nums[r] 的大小，需要的操作数是 `nums[r] * (r - l + 1) - sum(nums, l, r)` (sum 表示从 nums[l] 到 nums[r] 求和)，如果这个数值超过了 k 的大小，说明左边界要向右移动才可能能够满足操作。
+
+```java
+public int maxFrequencyWithWindow(int[] nums, int k) {
+		Arrays.sort(nums);
+		int l = 0, r = 0;
+		long window = 0;
+		int res = 0;
+
+		while (r < nums.length) {
+				window += nums[r];
+				while (l <= r && (long) nums[r] * (r - l + 1) - window > k) {
+						window -= nums[l];
+						l++;
+				}
+				res = Math.max(res, r - l + 1);
+				r++;
+		}
+		return res;
+}
+```
+
 ### [最小覆盖子串](https://leetcode-cn.com/problems/minimum-window-substring/)
 
 滑动窗口
