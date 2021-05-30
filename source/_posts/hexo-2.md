@@ -8,7 +8,8 @@ date: 2019-03-06 16:36:04
 thumbnail:
 ---
 
-
+简单说下常用的命令
+<!-- more -->
 ## [hexo命令](https://hexo.io/zh-cn/docs/commands)
 
 ### hexo 安装

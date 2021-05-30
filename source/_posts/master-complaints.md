@@ -1,10 +1,15 @@
 ---
-title: informalEassay
+title: 一些吐槽
 category: life
 tags:
-  - life
-  - undergraduate
+  - 吐槽
+password: a564335
+date: 2019-09-15 18:09:02
+toc:
+thumbnail:
 ---
+
+<!-- more -->
 
 
 ## 研究生生活的小记录
