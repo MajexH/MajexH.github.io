@@ -225,9 +225,10 @@ public class ShortestPalindromeNew_214 {
 
 找到其中的一个子序列，满足其字符串比较是最小的结果。
 
-- brute-force 
+- brute-force
 
 其实查看题意的话，最主要的就是不停的找到最小的数字
+
 - 如果最小的数字 右侧的数字数量大于等于剩下要找的数量，说明继续向右侧寻找最小数
 - 如果小于要找的数量，说明现在最小的数及其右侧所有的数字已经组成答案的一部分，因为这个最小数字形成的这个子序列一定是当前这个最小的
 - 重复寻找上述过程，直到所有的数字被填充
@@ -345,9 +346,9 @@ public int[] nextGreaterElements(int[] nums) {
 
 1. 如果 k 大于等于原来字符串的长度，那么就相当于删除了所有的数字，直接返回 "0" 即可
 2. 考虑 k 小于的情况
-	- 既然要删除数字，先考虑删除一个数字的情况，如 45 中删除一个数字，那么结果就是**删除5 保留4**，考虑 54 也是**删除5 保留4**
-	- 那既然如此，也就是说，从字符串中删除一个数字的话相当于`删除的数字之前的一个数替代当前这位数`，那么要使结果更小，`替代的这个数一定要小于之前的删除的那个数`，即 Dk < D(k-1) 删除 Dk
-	
+   - 既然要删除数字，先考虑删除一个数字的情况，如 45 中删除一个数字，那么结果就是**删除 5 保留 4**，考虑 54 也是**删除 5 保留 4**
+   - 那既然如此，也就是说，从字符串中删除一个数字的话相当于`删除的数字之前的一个数替代当前这位数`，那么要使结果更小，`替代的这个数一定要小于之前的删除的那个数`，即 Dk < D(k-1) 删除 Dk
+
 - 每次遍历删除一个数字
 
 ```java
@@ -970,6 +971,7 @@ public int concatenatedBinary(int n) {
 		return (int) res;
 }
 ```
+
 ### [模拟除法](https://leetcode-cn.com/problems/divide-two-integers/)
 
 不能使用**乘法、除法和 mod 运算符**。
@@ -1143,6 +1145,80 @@ func rangeBitwiseAnd(m int, n int) int {
 ```
 
 ## 动态规划
+
+### [877.石子游戏](https://leetcode-cn.com/problems/stone-game/)
+
+> 博弈论问题，问每次从一堆石子中取，每次只能从石子的头或者尾取，最后问第一个取的人能否获胜
+
+1. 递归二叉树(`超时`)
+
+这个方案很直观，就遍历每种可能，每次我分别取前一个 或者 后一个，看有没有一种可能能获胜即可
+
+```java
+// 形成一个二叉树 不停地遍历结果即可 超时
+// 递归重复的地方是 前一轮 不管从哪儿开始取 那么一定一定下一轮的开始状态是一致的
+// 比如数组 [0,1,2,3] 表示其下标 第一轮取了 0 3 那么不管谁取了 0 或者 3
+// 下一轮一定是 1 2
+public boolean stoneGameBruteForce(int[] piles) {
+		int sum = Arrays.stream(piles).sum();
+		return recursion(Arrays.stream(piles).boxed().collect(LinkedList::new, LinkedList::add, LinkedList::addAll), sum, 0, true);
+}
+
+public boolean recursion(LinkedList<Integer> piles, int sum, int alix, boolean take) {
+		if (piles.isEmpty()) {
+				return alix > sum - alix;
+		}
+		LinkedList<Integer> left = new LinkedList<>(piles);
+		int add = left.removeLast();
+		boolean flag = recursion(left, sum, take ? alix + add : alix, !take);
+		if (flag) return true;
+		LinkedList<Integer> right = new LinkedList<>(piles);
+		add = right.removeFirst();
+		return recursion(right, sum, take ? alix + add : alix, !take);
+}
+```
+
+2. dp 方案
+
+其实可以看到每次这个都有一个小问题，`比如数组 [0,1,2,3] 表示其下标 第一轮取了 0 3 那么不管谁取了 0 或者 3下一轮一定是 1 2`。
+
+所以，如果能够知道下一轮取的 `1 2` 的最优结果，那么就可以比较现在这一轮取 `0 3` 的最优结果，所以是一个 dp 问题
+
+```java
+// 动态规划就是用来剪枝的
+public boolean stoneGame(int[] piles) {
+		// dp[i][j] 表示 取完 i -> j 的 pile 后 alix 剩下的最大值
+		int[][] dp = new int[piles.length][piles.length];
+		for (int i = 0; i < piles.length; i++) {
+				dp[i][i] = piles[i];
+		}
+
+		for (int i = piles.length - 2; i >= 0; i--) {
+				for (int j = i + 1; j < piles.length; j++) {
+						// 比较选择 i 或者 选择 j 之后 哪个的值更大
+						dp[i][j] = Math.max(piles[i] - dp[i + 1][j], piles[j] - dp[i][j - 1]);
+				}
+		}
+		return dp[0][piles.length - 1] > 0;
+}
+```
+
+3. 博弈论
+
+···数学方法真的没想到··，搬一下解释吧
+
+> 假设有 nn 堆石子，nn 是偶数，则每堆石子的下标从 00 到 n-1n−1。根据下标将 nn 堆石子分成两组，每组有 2^n 堆石子，下标为偶数的石子堆属于第一组，下标为奇数的石子堆属于第二组。
+
+> 初始时，行的开始处的石子堆位于下标 00，属于第一组，行的结束处的石子堆位于下标 n-1n−1，属于第二组，因此作为先手的 Alex 可以自由选择取走第一组的一堆石子或者第二组的一堆石子。如果 Alex 取走第一组的一堆石子，则剩下的部分在行的开始处和结束处的石子堆都属于第二组，因此 Lee 只能取走第二组的一堆石子。如果 Alex 取走第二组的一堆石子，则剩下的部分在行的开始处和结束处的石子堆都属于第一组，因此 Lee 只能取走第一组的一堆石子。无论 Lee 取走的是开始处还是结束处的一堆石子，剩下的部分在行的开始处和结束处的石子堆一定是属于不同组的，因此轮到 Alex 取走石子时，Alex 又可以在两组石子之间进行自由选择。
+
+> 根据上述分析可知，作为先手的 Alex 可以在第一次取走石子时就决定取走哪一组的石子，并全程取走同一组的石子。既然如此，Alex 是否有必胜策略？
+
+> 答案是肯定的。将石子分成两组之后，可以计算出每一组的石子数量，同时知道哪一组的石子数量更多。Alex 只要选择取走数量更多的一组石子即可。因此，Alex 总是可以赢得比赛。
+
+```java
+public boolean stoneGame(int[] piles) {
+		return true;
+```
 
 ### [最后一块石头的重量 II](https://leetcode-cn.com/explore/interview/card/2020-top-interview-questions/280/array/1255/)
 
@@ -1695,10 +1771,10 @@ func canJump(nums []int) bool {
 
 > 给你两个长度分别 n 和 m 的整数数组 nums 和 multipliers ，其中 n >= m ，数组下标 从 1 开始 计数。
 > 初始时，你的分数为 0 。你需要执行恰好 m 步操作。在第 i 步操作（从 1 开始 计数）中，需要：
->选择数组 nums 开头处或者末尾处 的整数 x 。
-你获得 multipliers[i] * x 分，并累加到你的分数中。
-将 x 从数组 nums 中移除。
-在执行 m 步操作后，返回 最大 分数。
+> 选择数组 nums 开头处或者末尾处 的整数 x 。
+> 你获得 multipliers[i] \* x 分，并累加到你的分数中。
+> 将 x 从数组 nums 中移除。
+> 在执行 m 步操作后，返回 最大 分数。
 
 - 暴力解法
 
@@ -3320,7 +3396,7 @@ class Solution {
 
 #### [在 D 天内送达包裹的能力](https://leetcode-cn.com/problems/capacity-to-ship-packages-within-d-days/)
 
-要求的sahib`每天最低运载能力的最大值`的问题
+要求的 sahib`每天最低运载能力的最大值`的问题
 
 所以可以以运载能力为界限来二分求取，每次看在 mid 限制下的运载能力能否分成 D 份即可
 
@@ -3344,7 +3420,7 @@ public int shipWithinDays(int[] weights, int D) {
 
 public boolean canGenerate(int[] weights, int D, int mid) {
 		int curWeight = 0, curSplit = 1;
-		
+
 		for (int weight : weights) {
 				if (curWeight + weight > mid) {
 						curWeight = 0;
@@ -3352,18 +3428,18 @@ public boolean canGenerate(int[] weights, int D, int mid) {
 				}
 				curWeight += weight;
 		}
-		
+
 		return curSplit <= D;
 }
 ```
 
 #### [袋子里最少数目的球](https://leetcode-cn.com/problems/minimum-limit-of-balls-in-a-bag/)
 
-> 给你一个整数数组 nums ，其中 nums[i] 表示第 i 个袋子里球的数目。同时给你一个整数 maxOperations 。<br/>
-> 你可以进行如下操作至多 maxOperations 次：<br/>
-> 选择任意一个袋子，并将袋子里的球分到 2 个新的袋子中，每个袋子里都有 正整数 个球。<br/>
-> 比方说，一个袋子里有 5 个球，你可以把它们分到两个新袋子里，分别有 1 个和 4 个球，或者分别有 2 个和 3 个球。<br/>
-> 你的开销是单个袋子里球数目的 最大值 ，你想要 最小化 开销。<br/>
+> 给你一个整数数组  nums ，其中  nums[i]  表示第  i  个袋子里球的数目。同时给你一个整数  maxOperations 。<br/>
+> 你可以进行如下操作至多  maxOperations  次：<br/>
+> 选择任意一个袋子，并将袋子里的球分到  2 个新的袋子中，每个袋子里都有 正整数   个球。<br/>
+> 比方说，一个袋子里有  5  个球，你可以把它们分到两个新袋子里，分别有 1  个和 4  个球，或者分别有 2  个和 3  个球。<br/>
+> 你的开销是单个袋子里球数目的 最大值  ，你想要 最小化   开销。<br/>
 > 请你返回进行上述操作后的最小开销。
 
 - bruteforce
@@ -3904,7 +3980,7 @@ public boolean find132pattern(int[] nums) {
 
 #### [简单的题型](https://leetcode-cn.com/problems/maximum-subarray/)
 
-简单的题型如 剑指offer 上所述，只需要用一个数组保存以当前结尾的最大子序和即可。转移的时候，如果之前的最大子序和小于 0，说明应该重新开始计数。
+简单的题型如 剑指 offer 上所述，只需要用一个数组保存以当前结尾的最大子序和即可。转移的时候，如果之前的最大子序和小于 0，说明应该重新开始计数。
 
 ```java
 class Solution {
@@ -3983,7 +4059,7 @@ public int maximumSumWithTwoDirection(int[] arr) {
 1. 仍然需要一个数组保存以 arr[i] 结尾时的最大子序和
 2. 需要一个数组保存以 arr[i] 结尾时删除一个数字的最大子序和
 
-那么删除的这个数字可能是遍历的 arr[i] 或者 之前就已经删除了一个数字，arr[i] 不能被删除。所以**第2个**数组的更新策略即`deleteOne[i] = Math.max(deleteOne[i - 1] + arr[i], dp[i - 1])`。
+那么删除的这个数字可能是遍历的 arr[i] 或者 之前就已经删除了一个数字，arr[i] 不能被删除。所以**第 2 个**数组的更新策略即`deleteOne[i] = Math.max(deleteOne[i - 1] + arr[i], dp[i - 1])`。
 
 即保留当前的 arr[i] 那么只能取之前删除了一次的最大子序和 和 删除当前的 arr[i]，那么就要去之前没有删除数字的最大子序和 dp[i - 1]。
 
